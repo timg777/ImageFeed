@@ -11,17 +11,14 @@ final class SingleImageViewController: UIViewController {
         }
     }
     
-    private let backButton: BackButton = .init()
     @IBOutlet private weak var scrollView: UIScrollView!
     @IBOutlet private weak var imageView: UIImageView!
     @IBOutlet private weak var shareButton: UIButton!
     @IBOutlet private weak var likeButton: UIButton!
-    
+    @IBOutlet private weak var backButton: UIButton!
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        tabBarController?.tabBar.isHidden = true
-        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: backButton)
         
         setUpImage()
         setUpButtons()
@@ -35,8 +32,8 @@ extension SingleImageViewController: UIScrollViewDelegate {
 }
 
 private extension SingleImageViewController {
-    @IBAction func didTappedLikeButton(_ sender: Any) {}
-    @IBAction func didTappedShareButton(_ sender: Any) {
+    @IBAction func didTapLikeButton(_ sender: Any) {}
+    @IBAction func didTapShareButton(_ sender: Any) {
         guard let image else { return }
         let activityController = UIActivityViewController(
             activityItems: [image],
@@ -44,11 +41,13 @@ private extension SingleImageViewController {
         )
         present(activityController, animated: true, completion: nil)
     }
+    @IBAction func didTapBackButton(_ sender: Any) {
+        dismiss(animated: true)
+    }
 }
 
 private extension SingleImageViewController {
     func setUpImage() {
-        scrollView.bounces = true
         scrollView.minimumZoomScale = 0.1
         scrollView.maximumZoomScale = 1.25
         
@@ -60,7 +59,14 @@ private extension SingleImageViewController {
     
     func setUpButtons() {
         shareButton.setTitle("", for: .normal)
+        shareButton.backgroundColor = .ypBlack
+        shareButton.layer.cornerRadius = shareButton.frame.height / 2
+        
         likeButton.setTitle("", for: .normal)
+        likeButton.backgroundColor = .ypBlack
+        likeButton.layer.cornerRadius = likeButton.frame.height / 2
+        
+        backButton.setTitle("", for: .normal)
     }
 }
 
@@ -79,6 +85,14 @@ private extension SingleImageViewController {
         let newContentSize = scrollView.contentSize
         let x = (newContentSize.width - visibleRectSize.width) / 2
         let y = (newContentSize.height - visibleRectSize.height) / 2
-        scrollView.setContentOffset(CGPoint(x: x, y: y + 300), animated: false)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.scrollView.setContentOffset(CGPoint(x: x, y: y), animated: false)
+        }
+        
+        scrollView.layer.zPosition = 0
+        backButton.layer.zPosition = 1
+        likeButton.layer.zPosition = 1
+        shareButton.layer.zPosition = 1
     }
 }
