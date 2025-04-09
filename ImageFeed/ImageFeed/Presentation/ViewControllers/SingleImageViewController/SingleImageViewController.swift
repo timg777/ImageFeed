@@ -2,6 +2,7 @@ import UIKit
 
 final class SingleImageViewController: UIViewController {
     
+    // MARK: - Inernal Properties
     var image: UIImage? {
         didSet {
             guard let image, isViewLoaded else { return }
@@ -11,26 +12,37 @@ final class SingleImageViewController: UIViewController {
         }
     }
     
+    // MARK: - IB Outlets
     @IBOutlet private weak var scrollView: UIScrollView!
     @IBOutlet private weak var imageView: UIImageView!
     @IBOutlet private weak var shareButton: UIButton!
     @IBOutlet private weak var likeButton: UIButton!
     @IBOutlet private weak var backButton: UIButton!
 
+    // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
         
         setUpImage()
         setUpButtons()
     }
+
+    override func viewIsAppearing(_ animated: Bool) {
+        super.viewIsAppearing(animated)
+
+        guard let image else { return }
+        rescaleAndCenterImageInScrollView(image: image)
+    }
 }
 
+// MARK: - Extensions + Conforming to UIScrollViewDelegate
 extension SingleImageViewController: UIScrollViewDelegate {
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         return imageView
     }
 }
 
+// MARK: - Extensions + Private IBActions
 private extension SingleImageViewController {
     @IBAction func didTapLikeButton(_ sender: Any) {}
     @IBAction func didTapShareButton(_ sender: Any) {
@@ -46,6 +58,7 @@ private extension SingleImageViewController {
     }
 }
 
+// MARK: - Extensions + Private Setting Up Views
 private extension SingleImageViewController {
     func setUpImage() {
         scrollView.minimumZoomScale = 0.1
@@ -54,7 +67,6 @@ private extension SingleImageViewController {
         guard let image else { return }
         imageView.image = image
         imageView.frame.size = image.size
-        rescaleAndCenterImageInScrollView(image: image)
     }
     
     func setUpButtons() {
@@ -70,29 +82,27 @@ private extension SingleImageViewController {
     }
 }
 
+// MARK: - Extensions + Private Helpers
 private extension SingleImageViewController {
     func rescaleAndCenterImageInScrollView(image: UIImage) {
         let minZoomScale = scrollView.minimumZoomScale
         let maxZoomScale = scrollView.maximumZoomScale
+        
         view.layoutIfNeeded()
+        
         let visibleRectSize = scrollView.bounds.size
         let imageSize = image.size
         let hScale = visibleRectSize.width / imageSize.width
         let vScale = visibleRectSize.height / imageSize.height
         let scale = min(maxZoomScale, max(minZoomScale, min(hScale, vScale)))
         scrollView.setZoomScale(scale, animated: false)
+        
         scrollView.layoutIfNeeded()
+        
         let newContentSize = scrollView.contentSize
         let x = (newContentSize.width - visibleRectSize.width) / 2
         let y = (newContentSize.height - visibleRectSize.height) / 2
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.scrollView.setContentOffset(CGPoint(x: x, y: y), animated: false)
-        }
-        
-        scrollView.layer.zPosition = 0
-        backButton.layer.zPosition = 1
-        likeButton.layer.zPosition = 1
-        shareButton.layer.zPosition = 1
+        scrollView.setContentOffset(CGPoint(x: x, y: y), animated: false)
     }
 }

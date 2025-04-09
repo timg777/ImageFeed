@@ -103,16 +103,15 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleAspectFit" fixedFrame="YES" alwaysBounceVertical="YES" alwaysBounceHorizontal="YES" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" delaysContentTouches="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6Wu-N7-E3x">
-                                <rect key="frame" x="0.0" y="0.0" width="405" height="852"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleAspectFit" ambiguous="YES" alwaysBounceVertical="YES" alwaysBounceHorizontal="YES" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" delaysContentTouches="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6Wu-N7-E3x">
+                                <rect key="frame" x="0.0" y="0.0" width="397" height="852"/>
                                 <subviews>
                                     <imageView clipsSubviews="YES" multipleTouchEnabled="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" image="6" translatesAutoresizingMaskIntoConstraints="NO" id="Ub6-h8-pQy">
                                         <rect key="frame" x="0.0" y="0.0" width="397" height="852"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                     </imageView>
                                 </subviews>
-                                <viewLayoutGuide key="safeArea" id="UFL-Sa-JfK"/>
+                                <viewLayoutGuide key="safeArea" id="YV6-M7-Dd9"/>
                                 <viewLayoutGuide key="contentLayoutGuide" id="cIM-mg-qeJ"/>
                                 <viewLayoutGuide key="frameLayoutGuide" id="qYq-5p-uTl"/>
                                 <connections>
@@ -168,12 +167,16 @@
                         <viewLayoutGuide key="safeArea" id="AaC-Av-X09"/>
                         <color key="backgroundColor" name="YP-Black"/>
                         <constraints>
+                            <constraint firstAttribute="bottom" secondItem="6Wu-N7-E3x" secondAttribute="bottom" id="2pB-Qd-rL9"/>
+                            <constraint firstItem="6Wu-N7-E3x" firstAttribute="leading" secondItem="klw-6Z-Db5" secondAttribute="leading" id="4eB-Ve-O9u"/>
                             <constraint firstItem="SaP-yF-gmO" firstAttribute="top" secondItem="AaC-Av-X09" secondAttribute="top" id="68W-Rd-r6r"/>
                             <constraint firstItem="kLZ-yT-O95" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="bEO-Sh-0u0" secondAttribute="trailing" constant="8" symbolic="YES" id="BTB-ck-G9k"/>
                             <constraint firstItem="bEO-Sh-0u0" firstAttribute="leading" secondItem="AaC-Av-X09" secondAttribute="leading" constant="68" id="BfT-UV-SK8"/>
                             <constraint firstItem="SaP-yF-gmO" firstAttribute="leading" secondItem="AaC-Av-X09" secondAttribute="leading" id="Ofp-Dc-vSR"/>
+                            <constraint firstItem="6Wu-N7-E3x" firstAttribute="top" secondItem="klw-6Z-Db5" secondAttribute="top" id="XOB-DJ-38y"/>
                             <constraint firstItem="AaC-Av-X09" firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="SaP-yF-gmO" secondAttribute="trailing" symbolic="YES" id="Xod-59-rM2"/>
                             <constraint firstItem="AaC-Av-X09" firstAttribute="bottom" secondItem="bEO-Sh-0u0" secondAttribute="bottom" constant="16" id="fsX-1D-5Yp"/>
+                            <constraint firstAttribute="trailing" secondItem="6Wu-N7-E3x" secondAttribute="trailing" id="lo8-qe-qI6"/>
                             <constraint firstItem="AaC-Av-X09" firstAttribute="bottom" secondItem="kLZ-yT-O95" secondAttribute="bottom" constant="16" id="lut-gc-iXV"/>
                             <constraint firstItem="AaC-Av-X09" firstAttribute="trailing" secondItem="kLZ-yT-O95" secondAttribute="trailing" constant="68" id="wQh-di-H7g"/>
                         </constraints>

@@ -19,6 +19,7 @@ final class ImageListViewController: UIViewController {
     }
 }
 
+// MARK: - Extensions + Internal Segue Preparing
 extension ImageListViewController {
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == singleImageSegueIdentifier {

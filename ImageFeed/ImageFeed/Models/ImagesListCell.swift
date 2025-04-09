@@ -16,7 +16,6 @@ final class ImagesListCell: UITableViewCell {
         
         configureCell()
         configureCellImage()
-        configureDateLabel()
         configureLikeButton()
     }
 }
@@ -67,31 +66,5 @@ private extension ImagesListCell {
         likeButton.imageView?.layer.shadowOpacity = GlobalNamespace.likeButtonShadowOpacity
         likeButton.imageView?.layer.shadowOffset = GlobalNamespace.likeButtonShadowOffset
         likeButton.imageView?.layer.shadowColor = GlobalNamespace.likeButtonShadowColor
-    }
-    
-    func configureDateLabel() {
-        // TODO: - реализовать градиент с небольшим блюром для выделения текста из изображения (знаю, что комменты нельзя вам постить, но это для меня)
-//        let blurEffect = UIBlurEffect(style: .systemUltraThinMaterial)
-//        let blurView = UIVisualEffectView(effect: blurEffect)
-//        blurView.frame = dateLabel.bounds
-//        dateLabel.addSubview(blurView)
-//
-//        let gradientLayer = CAGradientLayer()
-//        gradientLayer.frame = .init(
-//            x: dateLabel.bounds.minX - 8,
-//            y: dateLabel.bounds.minY,
-//            width: dateLabel.bounds.width + 28,
-//            height: dateLabel.bounds.height
-//        )
-//        gradientLayer.colors = [
-//            UIColor.clear.cgColor,
-//            UIColor.black.cgColor,
-//            UIColor.black.cgColor,
-//            UIColor.clear.cgColor
-//        ]
-//        gradientLayer.zPosition = 0
-//
-//        dateLabel.layer.addSublayer(gradientLayer)
-//        dateLabel.layer.zPosition = 1
     }
 }
