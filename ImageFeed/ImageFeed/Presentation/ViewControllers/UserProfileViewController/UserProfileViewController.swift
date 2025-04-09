@@ -11,16 +11,25 @@ final class UserProfileViewController: UIViewController {
     private let favoriteLabel = UILabel()
     private let emptyFavotiesImageView = UIImageView()
     
-    // MARK: - VIew Life Cycles
+    // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
         setUpViews()
     }
-    
 }
 
 // MARK: - Extensions + Private Setting Up Views
 private extension UserProfileViewController {
+    func setUpViews() {
+        view.backgroundColor = .ypBlack
+        setUpUserProfileImage()
+        setUpLogoutButton()
+        setUpUsernameLabel()
+        setUpNicknameLabel()
+        setUpAboutUserLabel()
+        setUpFavoriteLabel()
+        setUpEmptyFavoritesImageView()
+    }
     func setUpUserProfileImage() {
         userProfileImage.image = UIImage(named: "Userpick-Stub")
         userProfileImage.layer.cornerRadius = UserProfileViewConstraints.userProfileImage_LayerCornerRadiusConstant.rawValue
@@ -147,16 +156,6 @@ private extension UserProfileViewController {
             ),
             emptyFavotiesImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         ])
-    }
-    func setUpViews() {
-        view.backgroundColor = .ypBlack
-        setUpUserProfileImage()
-        setUpLogoutButton()
-        setUpUsernameLabel()
-        setUpNicknameLabel()
-        setUpAboutUserLabel()
-        setUpFavoriteLabel()
-        setUpEmptyFavoritesImageView()
     }
 }
 
