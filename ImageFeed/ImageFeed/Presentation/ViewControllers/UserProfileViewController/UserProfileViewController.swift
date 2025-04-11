@@ -22,13 +22,16 @@ final class UserProfileViewController: UIViewController {
 private extension UserProfileViewController {
     func setUpViews() {
         view.backgroundColor = .ypBlack
+        
         setUpUserProfileImage()
+        
         setUpLogoutButton()
+        
         setUpUsernameLabel()
+        
         setUpNicknameLabel()
+        
         setUpAboutUserLabel()
-        setUpFavoriteLabel()
-        setUpEmptyFavoritesImageView()
     }
     func setUpUserProfileImage() {
         userProfileImage.image = UIImage(named: "Userpick-Stub")
@@ -124,41 +127,4 @@ private extension UserProfileViewController {
             logoutButton.centerYAnchor.constraint(equalTo: userProfileImage.centerYAnchor),
         ])
     }
-    func setUpFavoriteLabel() {
-        favoriteLabel.attributedText = UserProfileViewAttributedString.favoriteLabelAttributedText
-        favoriteLabel.translatesAutoresizingMaskIntoConstraints = false
-        
-        view.addSubview(favoriteLabel)
-        
-        NSLayoutConstraint.activate([
-            favoriteLabel.leadingAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.leadingAnchor,
-                constant: UserProfileViewConstraints.leadingAnchorConstant.rawValue
-            ),
-            favoriteLabel.topAnchor.constraint(
-                equalTo: aboutUserLabel.bottomAnchor,
-                constant: UserProfileViewConstraints.favoriteLabel_TopAnchorConstant.rawValue
-            )
-        ])
-    }
-    func setUpEmptyFavoritesImageView() {
-        emptyFavotiesImageView.image = UIImage(named: "No Photo")
-        emptyFavotiesImageView.translatesAutoresizingMaskIntoConstraints = false
-        
-        view.addSubview(emptyFavotiesImageView)
-        
-        NSLayoutConstraint.activate([
-            emptyFavotiesImageView.widthAnchor.constraint(equalToConstant: 115),
-            emptyFavotiesImageView.heightAnchor.constraint(equalTo: emptyFavotiesImageView.widthAnchor), // 1:1
-            emptyFavotiesImageView.topAnchor.constraint(
-                equalTo: favoriteLabel.bottomAnchor,
-                constant: UserProfileViewConstraints.emptyFavotiesImageView_WidthHeightConstant.rawValue
-            ),
-            emptyFavotiesImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
-        ])
-    }
 }
-
-
-
-
