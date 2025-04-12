@@ -16,7 +16,6 @@ final class ImagesListCell: UITableViewCell {
         
         configureCell()
         configureCellImage()
-        configureDateLabel()
         configureLikeButton()
     }
 }
@@ -67,9 +66,5 @@ private extension ImagesListCell {
         likeButton.imageView?.layer.shadowOpacity = GlobalNamespace.likeButtonShadowOpacity
         likeButton.imageView?.layer.shadowOffset = GlobalNamespace.likeButtonShadowOffset
         likeButton.imageView?.layer.shadowColor = GlobalNamespace.likeButtonShadowColor
-    }
-    
-    func configureDateLabel() {
-        // MARK: - dateLabel configuration staff here...
     }
 }
