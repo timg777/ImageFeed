@@ -11,10 +11,25 @@ final class UserProfileViewController: UIViewController {
     private let favoriteLabel = UILabel()
     private let emptyFavotiesImageView = UIImageView()
     
+    private let storage = OAuth2TokenStorage.shared
+    
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
+        
         setUpViews()
+    }
+}
+
+// MARK: - Extensions + Private Buttons Actions
+private extension UserProfileViewController {
+    @objc func logoutButtonTapped() {
+        route(
+            to: GlobalNamespace.greetingControllerIdentifier,
+            completion: { [weak self] in
+                self?.storage.token = nil
+            }
+        )
     }
 }
 
@@ -22,14 +37,22 @@ final class UserProfileViewController: UIViewController {
 private extension UserProfileViewController {
     func setUpViews() {
         view.backgroundColor = .ypBlack
+        
         setUpUserProfileImage()
+        
         setUpLogoutButton()
+        
         setUpUsernameLabel()
+        
         setUpNicknameLabel()
+        
         setUpAboutUserLabel()
+        
         setUpFavoriteLabel()
+        
         setUpEmptyFavoritesImageView()
     }
+    
     func setUpUserProfileImage() {
         userProfileImage.image = UIImage(named: "Userpick-Stub")
         userProfileImage.layer.cornerRadius = UserProfileViewConstraints.userProfileImage_LayerCornerRadiusConstant.rawValue
@@ -54,6 +77,7 @@ private extension UserProfileViewController {
             ) // 1:1
         ])
     }
+    
     func setUpUsernameLabel() {
         usernameLabel.attributedText = UserProfileViewAttributedString.userNameLabelAttributedText
         usernameLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -71,6 +95,7 @@ private extension UserProfileViewController {
             )
         ])
     }
+    
     func setUpNicknameLabel() {
         nicknameLabel.attributedText = UserProfileViewAttributedString.nicknameLabelAttributedText
         nicknameLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -88,6 +113,7 @@ private extension UserProfileViewController {
             )
         ])
     }
+    
     func setUpAboutUserLabel() {
         aboutUserLabel.attributedText = UserProfileViewAttributedString.aboutUserLabelAttributedText
         aboutUserLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -105,10 +131,13 @@ private extension UserProfileViewController {
             )
         ])
     }
+    
     func setUpLogoutButton() {
         logoutButton.setImage(UIImage(named: "Exit"), for: .normal)
         logoutButton.imageView?.contentMode = .scaleAspectFit
         logoutButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        logoutButton.addTarget(self, action: #selector(logoutButtonTapped), for: .touchUpInside)
         
         view.addSubview(logoutButton)
         
@@ -124,6 +153,7 @@ private extension UserProfileViewController {
             logoutButton.centerYAnchor.constraint(equalTo: userProfileImage.centerYAnchor),
         ])
     }
+    
     func setUpFavoriteLabel() {
         favoriteLabel.attributedText = UserProfileViewAttributedString.favoriteLabelAttributedText
         favoriteLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -141,6 +171,7 @@ private extension UserProfileViewController {
             )
         ])
     }
+    
     func setUpEmptyFavoritesImageView() {
         emptyFavotiesImageView.image = UIImage(named: "No Photo")
         emptyFavotiesImageView.translatesAutoresizingMaskIntoConstraints = false

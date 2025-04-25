@@ -9,7 +9,7 @@ final class WebViewViewController: UIViewController {
     @IBOutlet private weak var backButton: UIButton!
     
     // MARK: - Private Properties
-    private let oath2Service = OAuth2Service.shared
+    private let oauth2Service = OAuth2Service.shared
     
     // MARK: - Internal Properties
     weak var delegate: WebViewViewControllerDelegate?
@@ -42,8 +42,27 @@ final class WebViewViewController: UIViewController {
     }
 }
 
+// MARK: - Extensions + Private UI Updates
+private extension WebViewViewController {
+    func loadAuthView() {
+        guard let request = oauth2Service.getUserAuthRequest() else { return }
+        webView.load(request)
+    }
+    
+    func updateProgress() {
+        progressView.setProgress(Float(webView.estimatedProgress), animated: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+            UIView.animate(withDuration: 0.3) { [weak self] in
+                guard let self else { return }
+                progressView.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
+            }
+        }
+    }
+}
+
+// MARK: - Extensions + Internal WKWebView estimatedProgress value observation
 extension WebViewViewController {
-    override class func observeValue(
+    override func observeValue(
         forKeyPath keyPath: String?,
         of object: Any?,
         change: [NSKeyValueChangeKey : Any]?,
@@ -67,13 +86,13 @@ extension WebViewViewController: WKNavigationDelegate {
     func webView(
         _ webView: WKWebView,
         decidePolicyFor navigationAction: WKNavigationAction,
-        decisionHandler: @escaping @MainActor (WKNavigationActionPolicy
-        ) -> Void) {
+        decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void
+    ) {
         if let code = code(from: navigationAction) {
-            delegate?.webViewViewController(self, didAuthenticateWithCode: code)
             decisionHandler(.cancel)
-        } else {
+            delegate?.webViewViewController(self, didAuthenticateWithCode: code)
             delegate?.webViewViewControllerDidCancel(self)
+        } else {
             decisionHandler(.allow)
         }
     }
@@ -93,21 +112,6 @@ private extension WebViewViewController {
         backButton.setImage(.navBackButton, for: .normal)
         backButton.tintColor = .ypBlack
     }
-    func loadAuthView() {
-        guard var urlComponents = URLComponents(string: WebViewConstants.unsplashAuthporizeURLString)
-        else { return }
-        
-        urlComponents.queryItems = [
-            URLQueryItem(name: "client_id", value: Constants.accessKey),
-            URLQueryItem(name: "redirect_uri", value: Constants.redirectURI),
-            URLQueryItem(name: "response_type", value: "code"),
-            URLQueryItem(name: "scope", value: Constants.accessScope)
-        ]
-        
-        guard let url = urlComponents.url else { return }
-        let request = URLRequest(url: url)
-        webView.load(request)
-    }
 }
 
 // MARK: - Extensions + Private Helpers
@@ -122,12 +126,5 @@ private extension WebViewViewController {
             return codeQueryItem.value
         }
         return nil
-    }
-    func updateProgress() {
-        progressView.setProgress(Float(webView.estimatedProgress), animated: true)
-        UIView.animate(withDuration: 0.3) { [weak self] in
-            guard let self else { return }
-            progressView.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
-        }
     }
 }
