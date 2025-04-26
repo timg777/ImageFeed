@@ -136,25 +136,11 @@
                                     <action selector="didTapBackButton:" destination="DKl-ZD-ydV" eventType="touchUpInside" id="h4K-DU-W6Q"/>
                                 </connections>
                             </button>
-                            <button opaque="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="249" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="bEO-Sh-0u0" userLabel="Like Button">
-                                <rect key="frame" x="68" y="785" width="51" height="51"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="51" id="959-aB-jOI"/>
-                                    <constraint firstAttribute="width" secondItem="bEO-Sh-0u0" secondAttribute="height" multiplier="1:1" id="evE-fJ-9om"/>
-                                </constraints>
-                                <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="plain" image="Like_off" cornerStyle="capsule">
-                                    <preferredSymbolConfiguration key="preferredSymbolConfigurationForImage"/>
-                                </buttonConfiguration>
-                                <connections>
-                                    <action selector="didTapLikeButton:" destination="DKl-ZD-ydV" eventType="touchUpInside" id="o4l-Au-bnN"/>
-                                </connections>
-                            </button>
                             <button opaque="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="249" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="kLZ-yT-O95" userLabel="Share Button">
-                                <rect key="frame" x="274" y="785" width="51" height="51"/>
+                                <rect key="frame" x="171.66666666666666" y="786" width="50" height="50"/>
                                 <constraints>
                                     <constraint firstAttribute="width" secondItem="kLZ-yT-O95" secondAttribute="height" multiplier="1:1" id="lRV-pd-0yb"/>
-                                    <constraint firstAttribute="height" constant="51" id="u2M-7j-u3j"/>
+                                    <constraint firstAttribute="height" constant="50" id="u2M-7j-u3j"/>
                                 </constraints>
                                 <state key="normal" title="Button"/>
                                 <buttonConfiguration key="configuration" style="plain" image="Sharing" cornerStyle="capsule">
@@ -172,15 +158,12 @@
                             <constraint firstAttribute="bottom" secondItem="6Wu-N7-E3x" secondAttribute="bottom" id="2pB-Qd-rL9"/>
                             <constraint firstItem="6Wu-N7-E3x" firstAttribute="leading" secondItem="klw-6Z-Db5" secondAttribute="leading" id="4eB-Ve-O9u"/>
                             <constraint firstItem="SaP-yF-gmO" firstAttribute="top" secondItem="AaC-Av-X09" secondAttribute="top" id="68W-Rd-r6r"/>
-                            <constraint firstItem="kLZ-yT-O95" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="bEO-Sh-0u0" secondAttribute="trailing" constant="8" symbolic="YES" id="BTB-ck-G9k"/>
-                            <constraint firstItem="bEO-Sh-0u0" firstAttribute="leading" secondItem="AaC-Av-X09" secondAttribute="leading" constant="68" id="BfT-UV-SK8"/>
                             <constraint firstItem="SaP-yF-gmO" firstAttribute="leading" secondItem="AaC-Av-X09" secondAttribute="leading" id="Ofp-Dc-vSR"/>
                             <constraint firstItem="6Wu-N7-E3x" firstAttribute="top" secondItem="klw-6Z-Db5" secondAttribute="top" id="XOB-DJ-38y"/>
                             <constraint firstItem="AaC-Av-X09" firstAttribute="trailing" relation="greaterThanOrEqual" secondItem="SaP-yF-gmO" secondAttribute="trailing" symbolic="YES" id="Xod-59-rM2"/>
-                            <constraint firstItem="AaC-Av-X09" firstAttribute="bottom" secondItem="bEO-Sh-0u0" secondAttribute="bottom" constant="16" id="fsX-1D-5Yp"/>
+                            <constraint firstItem="kLZ-yT-O95" firstAttribute="centerX" secondItem="AaC-Av-X09" secondAttribute="centerX" id="dBX-1r-yGz"/>
                             <constraint firstAttribute="trailing" secondItem="6Wu-N7-E3x" secondAttribute="trailing" id="lo8-qe-qI6"/>
                             <constraint firstItem="AaC-Av-X09" firstAttribute="bottom" secondItem="kLZ-yT-O95" secondAttribute="bottom" constant="16" id="lut-gc-iXV"/>
-                            <constraint firstItem="AaC-Av-X09" firstAttribute="trailing" secondItem="kLZ-yT-O95" secondAttribute="trailing" constant="68" id="wQh-di-H7g"/>
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" id="jpL-lO-wi4"/>
@@ -188,7 +171,6 @@
                     <connections>
                         <outlet property="backButton" destination="SaP-yF-gmO" id="iIu-GP-4fv"/>
                         <outlet property="imageView" destination="Ub6-h8-pQy" id="see-HE-gjB"/>
-                        <outlet property="likeButton" destination="bEO-Sh-0u0" id="bny-wE-IId"/>
                         <outlet property="scrollView" destination="6Wu-N7-E3x" id="EuQ-Kx-zUT"/>
                         <outlet property="shareButton" destination="kLZ-yT-O95" id="1e4-O5-auz"/>
                     </connections>

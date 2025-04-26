@@ -16,7 +16,6 @@ final class SingleImageViewController: UIViewController {
     @IBOutlet private weak var scrollView: UIScrollView!
     @IBOutlet private weak var imageView: UIImageView!
     @IBOutlet private weak var shareButton: UIButton!
-    @IBOutlet private weak var likeButton: UIButton!
     @IBOutlet private weak var backButton: UIButton!
 
     // MARK: - View Life Cycles
@@ -38,7 +37,7 @@ final class SingleImageViewController: UIViewController {
 // MARK: - Extensions + Conforming to UIScrollViewDelegate
 extension SingleImageViewController: UIScrollViewDelegate {
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
-        return imageView
+        imageView
     }
     
     func scrollViewDidZoom(_ scrollView: UIScrollView) {
@@ -77,10 +76,6 @@ private extension SingleImageViewController {
         shareButton.setTitle("", for: .normal)
         shareButton.backgroundColor = .ypBlack
         shareButton.layer.cornerRadius = shareButton.frame.height / 2
-        
-        likeButton.setTitle("", for: .normal)
-        likeButton.backgroundColor = .ypBlack
-        likeButton.layer.cornerRadius = likeButton.frame.height / 2
         
         backButton.setTitle("", for: .normal)
     }

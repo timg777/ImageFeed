@@ -153,7 +153,7 @@ private extension UserProfileViewController {
             logoutButton.centerYAnchor.constraint(equalTo: userProfileImage.centerYAnchor),
         ])
     }
-    
+  
     func setUpFavoriteLabel() {
         favoriteLabel.attributedText = UserProfileViewAttributedString.favoriteLabelAttributedText
         favoriteLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -189,7 +189,3 @@ private extension UserProfileViewController {
         ])
     }
 }
-
-
-
-
