@@ -7,36 +7,44 @@ final class OAuth2Service: OAuth2ServiceProtocol {
 
 // MARK: - Extensions + Internal Data Fetching
 extension OAuth2Service {
-    func fetchOAuthToken(code: String, _ handler: @escaping (Result<String, Error>) -> Void) {
-        if let request = makeOAuthTokenRequest(code: code) {
-            let task = URLSession.shared.data(for: request) { result in
-                switch result {
-                case .success(let data):
-                    let decoder = JSONDecoder()
-                    do {
-                        let oAuthTokenResponse = try decoder.decode(OAuthTokenResponseBody.self, from: data)
-                        let tokenType = oAuthTokenResponse.token_type
-                        
-                        if tokenType.lowercased() == "bearer" {
-                            handler(.success(oAuthTokenResponse.access_token))
-                        } else {
-                            handler(.failure(NetworkError.badTokenType(tokenType)))
-                        }
-                    } catch {
-                        handler(.failure(error))
-                        return
-                    }
-                case .failure(let error):
-                    handler(.failure(error))
-                }
-            }
-            
-            task.resume()
+    func fetchOAuthToken(
+        code: String,
+        handler: @escaping (Result<String, Error>) -> Void
+    ) {
+        guard
+            let request = makeOAuthTokenRequest(code: code)
+        else {
+            handler(.failure(NetworkError.invalidRequest))
+            return
         }
+        
+        let task = URLSession.shared.dataTaskResult(for: request) { result in
+            switch result {
+            case .success(let data):
+                let decoder = JSONDecoder()
+                do {
+                    let oAuthTokenResponse = try decoder.decode(OAuthTokenResponseBody.self, from: data)
+                    let tokenType = oAuthTokenResponse.token_type
+                    
+                    if tokenType.lowercased() == "bearer" {
+                        handler(.success(oAuthTokenResponse.access_token))
+                    } else {
+                        handler(.failure(NetworkError.badTokenType(tokenType)))
+                    }
+                } catch {
+                    handler(.failure(error))
+                    return
+                }
+            case .failure(let error):
+                handler(.failure(error))
+            }
+        }
+        
+        task.resume()
     }
 }
 
-// MARK: - Extensions+ Internal Requests
+// MARK: - Extensions + Internal Requests
 extension OAuth2Service {
     func getUserAuthRequest() -> URLRequest? {
         guard
@@ -73,6 +81,7 @@ private extension OAuth2Service {
             relativeTo: baseURL
         )
         else { return nil }
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         return request

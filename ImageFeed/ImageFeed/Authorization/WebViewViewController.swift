@@ -51,11 +51,13 @@ private extension WebViewViewController {
     
     func updateProgress() {
         progressView.setProgress(Float(webView.estimatedProgress), animated: true)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+        
+        if webView.estimatedProgress >= 1.0 {
             UIView.animate(withDuration: 0.3) { [weak self] in
-                guard let self else { return }
-                progressView.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
+                self?.progressView.alpha = 0
             }
+        } else {
+            progressView.alpha = 1
         }
     }
 }

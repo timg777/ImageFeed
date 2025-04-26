@@ -1,31 +1,36 @@
 import Foundation
 
 extension URLSession {
-    func data(
+
+    func dataTaskResult(
         for urlRequest: URLRequest,
         completion: @escaping (Result<Data, Error>) -> Void
     ) -> URLSessionTask {
-        let fulFillCompletionOnMainThread: (Result<Data, Error>)  -> Void = { result in
+        let fulfillCompletionOnMainThread: (Result<Data, Error>)  -> Void = { result in
             DispatchQueue.main.async {
                 completion(result)
             }
         }
         
         let task = dataTask(with: urlRequest) { data, response, error in
-            if
+            
+            if let error {
+                fulfillCompletionOnMainThread(.failure(NetworkError.urlRequestError(error)))
+                return
+            }
+            
+            guard
                 let data,
-                let response,
-                let statusCode = (response as? HTTPURLResponse)?.statusCode
-            {
-                if 200..<300 ~= statusCode {
-                    fulFillCompletionOnMainThread(.success(data))
-                } else {
-                    fulFillCompletionOnMainThread(.failure(NetworkError.httpStatusCode(statusCode)))
-                }
-            } else if let error {
-                fulFillCompletionOnMainThread(.failure(NetworkError.urlRequestError(error)))
+                let response = response as? HTTPURLResponse
+            else {
+                fulfillCompletionOnMainThread(.failure(NetworkError.urlSessionError))
+                return
+            }
+                                              
+            if 200..<300 ~= response.statusCode {
+                fulfillCompletionOnMainThread(.success(data))
             } else {
-                fulFillCompletionOnMainThread(.failure(NetworkError.urlSessionError))
+                fulfillCompletionOnMainThread(.failure(NetworkError.httpStatusCode(response.statusCode)))
             }
         }
         

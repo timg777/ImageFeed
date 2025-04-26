@@ -22,7 +22,7 @@ final class SplashViewController: UIViewController {
     }
 }
 
-// MARK: - Extensions + Internal Appearance Controll
+// MARK: - Extensions + Internal Appearance Control
 extension SplashViewController {
     override var preferredStatusBarStyle: UIStatusBarStyle {
         .lightContent
