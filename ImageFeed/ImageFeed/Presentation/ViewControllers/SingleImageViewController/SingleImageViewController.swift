@@ -2,6 +2,13 @@ import UIKit
 
 final class SingleImageViewController: UIViewController {
     
+    // MARK: - Private Views
+    private let scrollView = UIScrollView()
+    private let imageView = UIImageView()
+    private let shareButton = UIButton()
+    private let backButton = UIButton()
+    private let likeButton = UIButton()
+    
     // MARK: - Inernal Properties
     var image: UIImage? {
         didSet {
@@ -11,19 +18,13 @@ final class SingleImageViewController: UIViewController {
             rescaleAndCenterImageInScrollView(image: image)
         }
     }
-    
-    // MARK: - IB Outlets
-    @IBOutlet private weak var scrollView: UIScrollView!
-    @IBOutlet private weak var imageView: UIImageView!
-    @IBOutlet private weak var shareButton: UIButton!
-    @IBOutlet private weak var backButton: UIButton!
 
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        setUpImage()
-        setUpButtons()
+        scrollView.delegate = self
+        setUpViews()
     }
 
     override func viewIsAppearing(_ animated: Bool) {
@@ -47,37 +48,24 @@ extension SingleImageViewController: UIScrollViewDelegate {
 
 // MARK: - Extensions + Private IBActions
 private extension SingleImageViewController {
-    @IBAction func didTapLikeButton(_ sender: Any) {}
-    @IBAction func didTapShareButton(_ sender: Any) {
-        guard let image else { return }
+    @objc func didTapLikeButton() {
+        #warning("TODO: handle liking an image")
+    }
+    @objc func didTapShareButton() {
+        guard let image else {
+            logErrorToSTDIO(
+                errorDescription: "Failed to share image because no image was set"
+            )
+            return
+        }
         let activityController = UIActivityViewController(
             activityItems: [image],
             applicationActivities: nil
         )
         present(activityController, animated: true, completion: nil)
     }
-    @IBAction func didTapBackButton(_ sender: Any) {
-        dismiss(animated: true)
-    }
-}
-
-// MARK: - Extensions + Private Setting Up Views
-private extension SingleImageViewController {
-    func setUpImage() {
-        scrollView.minimumZoomScale = 0.1
-        scrollView.maximumZoomScale = 1.25
-        
-        guard let image else { return }
-        imageView.image = image
-        imageView.frame.size = image.size
-    }
-    
-    func setUpButtons() {
-        shareButton.setTitle("", for: .normal)
-        shareButton.backgroundColor = .ypBlack
-        shareButton.layer.cornerRadius = shareButton.frame.height / 2
-        
-        backButton.setTitle("", for: .normal)
+    @objc func didTapBackButton() {
+        popViewController()
     }
 }
 
@@ -93,9 +81,21 @@ private extension SingleImageViewController {
         let imageSize = image.size
         let hScale = visibleRectSize.width / imageSize.width
         let vScale = visibleRectSize.height / imageSize.height
-        let scale = min(maxZoomScale, max(minZoomScale, min(hScale, vScale)))
+        let scale = min(
+            maxZoomScale,
+            max(
+                minZoomScale,
+                min(
+                    hScale,
+                    vScale
+                )
+            )
+        )
         
-        scrollView.setZoomScale(scale, animated: false)
+        scrollView.setZoomScale(
+            scale,
+            animated: false
+        )
         scrollView.layoutIfNeeded()
         
         centerImage()
@@ -105,14 +105,181 @@ private extension SingleImageViewController {
         let scrollViewSize = scrollView.bounds.size
         let imageViewSize = imageView.frame.size
         
-        let horizontalInset = max(0, (scrollViewSize.width - imageViewSize.width) / 2)
-        let verticalInset = max(0, (scrollViewSize.height - imageViewSize.height) / 2)
+        let horizontalInset =
+        max(
+            0,
+            (scrollViewSize.width - imageViewSize.width) / 2
+        )
+        let verticalInset =
+        max(
+            0,
+            (scrollViewSize.height - imageViewSize.height) / 2
+        )
         
-        scrollView.contentInset = UIEdgeInsets(top: verticalInset, left: horizontalInset, bottom: verticalInset, right: horizontalInset)
+        scrollView.contentInset =
+        UIEdgeInsets(
+            top: verticalInset,
+            left: horizontalInset,
+            bottom: verticalInset,
+            right: horizontalInset
+        )
         
         let xOffset = (scrollView.contentSize.width - scrollViewSize.width) / 2
         let yOffset = (scrollView.contentSize.height - scrollViewSize.height) / 2
         
-        scrollView.setContentOffset(CGPoint(x: xOffset, y: yOffset), animated: animated)
+        scrollView.setContentOffset(
+            CGPoint(
+                x: xOffset,
+                y: yOffset
+            ),
+            animated: animated
+        )
+    }
+}
+
+// MARK: - Extensions + Private Setting Up Views
+private extension SingleImageViewController {
+    func setUpViews() {
+        setUpScrollView()
+        setUpImage()
+        setUpBackButton()
+        setUpShareButton()
+    }
+    
+    func setUpImage() {
+        guard let image else { return }
+        imageView.image = image
+        imageView.frame.size = image.size
+        imageView.contentMode = .scaleAspectFit
+        imageView.isUserInteractionEnabled = false
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        
+        scrollView.addSubview(imageView)
+        
+        NSLayoutConstraint.activate([
+            imageView.topAnchor.constraint(
+                equalTo: scrollView.contentLayoutGuide.topAnchor
+            ),
+            imageView.leadingAnchor.constraint(
+                equalTo: scrollView.contentLayoutGuide.leadingAnchor
+            ),
+            imageView.trailingAnchor.constraint(
+                equalTo: scrollView.contentLayoutGuide.trailingAnchor
+            ),
+            imageView.bottomAnchor.constraint(
+                equalTo: scrollView.contentLayoutGuide.bottomAnchor
+            ),
+            imageView.widthAnchor.constraint(
+                equalToConstant: image.size.width
+            ),
+            imageView.heightAnchor.constraint(
+                equalToConstant: image.size.height
+            )
+        ])
+    }
+    
+    func setUpShareButton() {
+        shareButton.setTitle(
+            "",
+            for: .normal
+        )
+        shareButton.setImage(
+            UIImage(named: "Sharing"),
+            for: .normal
+        )
+        shareButton.backgroundColor = .ypBlack
+        shareButton.layer.cornerRadius = 22
+        shareButton.addTarget(
+            self,
+            action: #selector(didTapShareButton),
+            for: .touchUpInside
+        )
+        shareButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        view.addSubview(shareButton)
+        
+        NSLayoutConstraint.activate([
+            shareButton.widthAnchor.constraint(
+                equalToConstant: 44
+            ),
+            shareButton.heightAnchor.constraint(
+                equalTo: shareButton.widthAnchor
+            ), // 1:1
+            shareButton.centerXAnchor.constraint(
+                equalTo: view.centerXAnchor
+            ),
+            shareButton.bottomAnchor.constraint(
+                equalTo: view.bottomAnchor,
+                constant: -44
+            )
+        ])
+    }
+    
+    func setUpBackButton() {
+        backButton.setTitle(
+            "",
+            for: .normal
+        )
+        backButton.setImage(
+            UIImage(systemName: "chevron.left"),
+            for: .normal
+        )
+        backButton.imageView?.tintColor = .ypWhite
+        backButton.addTarget(
+            self,
+            action: #selector(didTapBackButton),
+            for: .touchUpInside
+        )
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        view.addSubview(backButton)
+        
+        NSLayoutConstraint.activate([
+            backButton.widthAnchor.constraint(
+                equalToConstant: 44
+            ),
+            backButton.heightAnchor.constraint(
+                equalTo: backButton.widthAnchor
+            ), // 1:1
+            backButton.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor,
+                constant: 16
+            ),
+            backButton.topAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.topAnchor
+            )
+        ])
+    }
+    
+    func setUpScrollView() {
+        scrollView.minimumZoomScale = 0.1
+        scrollView.maximumZoomScale = 1.25
+        scrollView.contentSize = image?.size ?? .zero
+        scrollView.backgroundColor = .ypBlack
+        scrollView.contentMode = .scaleAspectFit
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        
+        view.addSubview(scrollView)
+        
+        NSLayoutConstraint.activate([
+            scrollView.widthAnchor.constraint(
+                equalToConstant: view.bounds.width
+            ),
+            scrollView.heightAnchor.constraint(
+                equalToConstant: view.bounds.height
+            ),
+            scrollView.topAnchor.constraint(
+                equalTo: view.topAnchor
+            ),
+            scrollView.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor
+            ),
+            scrollView.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor
+            ),
+            scrollView.bottomAnchor.constraint(
+                equalTo: view.bottomAnchor
+            )
+        ])
     }
 }

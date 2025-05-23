@@ -6,7 +6,10 @@ enum UserProfileViewAttributedString {
             string: "Placeholder_username",
             attributes: [
                 .kern : 0.3,
-                .font : UIFont.systemFont(ofSize: 23, weight: .bold),
+                .font : UIFont.systemFont(
+                    ofSize: 23,
+                    weight: .bold
+                ),
                 .foregroundColor : UIColor.ypWhite
             ]
         )
@@ -17,7 +20,10 @@ enum UserProfileViewAttributedString {
             string: "@placeholder_nickname",
             attributes: [
                 .kern : 0,
-                .font : UIFont.systemFont(ofSize: 13, weight: .regular),
+                .font : UIFont.systemFont(
+                    ofSize: 13,
+                    weight: .regular
+                ),
                 .foregroundColor : UIColor.ypGray,
                 .baselineOffset : 8,
             ]
@@ -29,7 +35,10 @@ enum UserProfileViewAttributedString {
             string: "Placeholder_about",
             attributes: [
                 .kern : 0,
-                .font : UIFont.systemFont(ofSize: 13, weight: .regular),
+                .font : UIFont.systemFont(
+                    ofSize: 13,
+                    weight: .regular
+                ),
                 .foregroundColor : UIColor.ypWhite
             ]
         )
@@ -40,7 +49,10 @@ enum UserProfileViewAttributedString {
             string: "Избранное",
             attributes: [
                 .kern : 0,
-                .font : UIFont.systemFont(ofSize: 23, weight: .bold),
+                .font : UIFont.systemFont(
+                    ofSize: 23,
+                    weight: .bold
+                ),
                 .foregroundColor : UIColor.ypWhite
             ]
         )

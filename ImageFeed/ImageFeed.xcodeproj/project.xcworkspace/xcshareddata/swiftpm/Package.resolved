@@ -1,0 +1,33 @@
+{
+  "originHash" : "6de5f09eb3f14214671dd855307245794a4409398ff52a2f4e8b9bcea9a4306f",
+  "pins" : [
+    {
+      "identity" : "keychainwrapper",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/puretears/KeychainWrapper.git",
+      "state" : {
+        "revision" : "e72bc3256b2f830750f1c0080bccc3058f866f3b",
+        "version" : "1.2.1"
+      }
+    },
+    {
+      "identity" : "kingfisher",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/onevcat/Kingfisher.git",
+      "state" : {
+        "revision" : "7deda23bbdca612076c5c315003d8638a08ed0f1",
+        "version" : "8.3.2"
+      }
+    },
+    {
+      "identity" : "progresshud",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/relatedcode/ProgressHUD",
+      "state" : {
+        "revision" : "22c3f83268b4c47b4623fe3a9701af7310fa8d8a",
+        "version" : "13.6.1"
+      }
+    }
+  ],
+  "version" : 3
+}
