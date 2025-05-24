@@ -2,16 +2,35 @@ import UIKit
 
 final class SplashViewController: UIViewController {
     
+    // MARK: - Private Views
+    private lazy var launchImage: UIImageView = {
+        .init()
+    }()
+    
     // MARK: - Private Constants
-    private let storage = OAuth2TokenStorage.shared
+    private var storage: StorageProtocol = Storage.shared
+    private let secureStorage: SecureStorageProtocol = SecureStorage.shared
+    private let profileService = ProfileService.shared
+    private let profileImageService = ProfileImageService.shared
     
     // MARK: - View Life Cycles
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        
-        if storage.token != nil {
-            routeToMain()
+        setUpViews()
+
+        if storage.isNotFirstLaunch {
+            if let token = handleSecureStorageTokenResult() {
+                fetchUserProfile(by: token)
+                routeToMain()
+            } else {
+                logErrorToSTDIO(
+                    errorDescription: "No token found in KeychainWrapper"
+                )
+                routeToAuthentication()
+            }
         } else {
+            storage.isNotFirstLaunch = true
+            handleSecureStorageTokenResult(remove: true)
             routeToAuthentication()
         }
     }
@@ -27,44 +46,129 @@ extension SplashViewController {
     override var preferredStatusBarStyle: UIStatusBarStyle {
         .lightContent
     }
-    
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == GlobalNamespace.authenticationSegueIdentifier {
-            guard
-                let navigationController = segue.destination as? UINavigationController,
-                let viewController = navigationController.viewControllers[0] as? AuthViewController
-            else {
-                assertionFailure("Failed to prepare for \(GlobalNamespace.authenticationSegueIdentifier)")
-                return
-            }
-            viewController.delegate = self
-        } else {
-            super.prepare(for: segue, sender: sender)
-        }
-    }
 }
 
 // MARK: - Extensions + Internal AuthViewControllerDelegate Conformance
 extension SplashViewController: AuthViewControllerDelegate {
     func didAuthenticate(_ vc: AuthViewController) {
-        dismiss(animated: true) { [weak self] in
-            self?.routeToMain()
+        UIBlockingActivityIndicator.showActivityIndicator()
+        guard let token = handleSecureStorageTokenResult() else {
+            logErrorToSTDIO(
+                errorDescription: "Failed to handle secure storage token result"
+            )
+            return
         }
+        fetchUserProfile(by: token)
     }
     
     func didFailAuthentication(with error: any Error) {
         routeToAuthentication()
-        // TODO: - error handling here...
+        logErrorToSTDIO(
+            errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
+        )
+    }
+}
+
+// MARK: - Extensions + Private Helpers
+private extension SplashViewController {
+    
+    @discardableResult
+    func handleSecureStorageTokenResult(remove: Bool = false) -> String? {
+        if remove {
+            secureStorage.removeToken()
+            return nil
+        } else {
+            return secureStorage.getToken()
+        }
+    }
+    
+    func fetchUserProfile(by token: String) {
+        profileService.fetchProfile(
+            httpMethod: .GET,
+            token: token
+        ) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(let profile):
+                profileImageService.fetchProfileImageURL(
+                    username: profile.username,
+                    token: token
+                ) { result in
+                    self.dismissAndGoToMain()
+                    switch result {
+                    case .success(_):
+                        // TODO: - succeeded staff here
+                        break
+                    case .failure(let error):
+                        logErrorToSTDIO(
+                            errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
+                        )
+                    }
+                }
+            case .failure(let error):
+                logErrorToSTDIO(
+                    errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
+                )
+            }
+        }
     }
 }
 
 // MARK: - Extensions + Private Routing
 private extension SplashViewController {
+    func dismissAndGoToMain() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            dismiss(animated: true) { [weak self] in
+                guard let self else { return }
+                UIBlockingActivityIndicator.dismissActivityIndicator()
+                routeToMain()
+            }
+        }
+    }
     func routeToAuthentication() {
-        performSegue(withIdentifier: GlobalNamespace.authenticationSegueIdentifier, sender: nil)
+        let authViewController = AuthViewController()
+        authViewController.delegate = self
+        authViewController.modalPresentationStyle = .fullScreen
+        present(
+            authViewController,
+            animated: true
+        )
     }
     
     func routeToMain() {
-        route(to: GlobalNamespace.tabBarControllerIdentifier)
+        let tabBarController = TabBarController()
+        setRootViewController(vc: tabBarController)
+    }
+}
+
+// MARK: - Extensions + Private Setting Up Views
+private extension SplashViewController {
+    func setUpViews() {
+        view.backgroundColor = .ypBlack
+        setUpLaunchImage()
+    }
+    
+    func setUpLaunchImage() {
+        launchImage.image = UIImage(named: "LaunchScreenVector")
+        launchImage.layer.cornerRadius = UserProfileViewConstraints.userProfileImage_LayerCornerRadiusConstant.rawValue
+        launchImage.translatesAutoresizingMaskIntoConstraints = false
+        
+        view.addSubview(launchImage)
+        
+        NSLayoutConstraint.activate([
+            launchImage.centerXAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.centerXAnchor
+            ),
+            launchImage.centerYAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.centerYAnchor
+            ),
+            launchImage.heightAnchor.constraint(
+                equalToConstant: UserProfileViewConstraints.userProfileImage_WidthHeightConstant.rawValue
+            ),
+            launchImage.widthAnchor.constraint(
+                equalTo: launchImage.heightAnchor
+            ) // 1:1
+        ])
     }
 }

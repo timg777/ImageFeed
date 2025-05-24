@@ -2,6 +2,8 @@ import UIKit
 
 final class OAuth2Service: OAuth2ServiceProtocol {
     static let shared = OAuth2Service()
+    private var lastCode: String?
+    private var task: URLSessionTask?
     private init() {}
 }
 
@@ -12,34 +14,41 @@ extension OAuth2Service {
         handler: @escaping (Result<String, Error>) -> Void
     ) {
         guard
-            let request = makeOAuthTokenRequest(code: code)
+            lastCode != code
         else {
-            handler(.failure(NetworkError.invalidRequest))
+            handler(.failure(OAuth2Error.duplicateOAuthRequest))
             return
         }
         
-        let task = URLSession.shared.dataTaskResult(for: request) { result in
+        task?.cancel()
+        lastCode = code
+        
+        guard
+            let request = makeOAuthTokenRequest(code: code)
+        else {
+            handler(.failure(OAuth2Error.invalidRequest))
+            return
+        }
+        
+        let task = URLSession.shared.objectTask(for: request) { [weak self] (result: Result<OAuthTokenResponseBody, Error>) in
+            guard let self else { return }
             switch result {
-            case .success(let data):
-                let decoder = JSONDecoder()
-                do {
-                    let oAuthTokenResponse = try decoder.decode(OAuthTokenResponseBody.self, from: data)
-                    let tokenType = oAuthTokenResponse.token_type
-                    
-                    if tokenType.lowercased() == "bearer" {
-                        handler(.success(oAuthTokenResponse.access_token))
-                    } else {
-                        handler(.failure(NetworkError.badTokenType(tokenType)))
-                    }
-                } catch {
-                    handler(.failure(error))
-                    return
+            case .success(let oAuthTokenResponse):
+                let tokenType = oAuthTokenResponse.token_type
+                
+                if tokenType.lowercased() == "bearer" {
+                    handler(.success(oAuthTokenResponse.access_token))
+                } else {
+                    handler(.failure(OAuth2Error.invalidTokenType(tokenType)))
                 }
             case .failure(let error):
                 handler(.failure(error))
             }
+            self.task = nil
+            self.lastCode = nil
         }
         
+        self.task = task
         task.resume()
     }
 }

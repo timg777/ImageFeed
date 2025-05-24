@@ -3,11 +3,34 @@ import UIKit
 struct GlobalNamespace {
     // MARK: - global config
     static let localizationIdentifier = "ru_RU"
-    static let userOAuthTokenKey = "userOAuthToken"
+    
+    // MARK: - Security Data
+    static let appName = "com.TIPT.ImageFeed"
+    static let account = "timg777@yandex.ru"
+    static let userOAuthTokenSaltPiece_1 = "%0x008!.4"
+    static let userOAuthTokenSaltPiece_2 = "*&x0#8^"
+    
+    // MARK: - UserDefaults Keys
+    static let isNotFirstLaunchKey = "isNotFirstLaunch"
+    
+    // MARK: - KeyChain Identifiers
+    static let oAuthTokenKeyChainIdentifier = ".OAuthTokenKeyChainIdentifier"
     
     // MARK: - insets
-    static let imageInsets = UIEdgeInsets(top: 4, left: 0, bottom: 4, right: 0)
-    static let tableViewEdgeInsets = UIEdgeInsets(top: 12, left: 0, bottom: 12, right: 0)
+    static let imageInsets =
+    UIEdgeInsets(
+        top: 4,
+        left: 0,
+        bottom: 4,
+        right: 0
+    )
+    static let tableViewEdgeInsets =
+    UIEdgeInsets(
+        top: 5,
+        left: 16,
+        bottom: 5,
+        right: 16
+    )
     
     // MARK: - other
     static let cellCornerRadius: CGFloat = 16
@@ -18,9 +41,12 @@ struct GlobalNamespace {
     static let likeButtonShadowOffset: CGSize = .zero
     static let likeButtonShadowColor: CGColor = UIColor.black.cgColor
     
-    // MARK: - routing identifiers
-    static let authenticationSegueIdentifier = "UserAuthenticationSegueIdentifier"
-    static let tabBarControllerIdentifier = "TabBarControllerIdentifier"
-    static let showWebViewSegueIdentifier = "showWebViewSegueIdentifier"
-    static let greetingControllerIdentifier = "GreetingViewControllerIdentifier"
+    enum Routing: String {
+        case tabBarControllerIdentifier = "TabBarControllerIdentifier"
+    }
+    
+    // MARK: - notification identifiers
+    enum NorificationName: String {
+        case profileImageProviderDidChange
+    }
 }

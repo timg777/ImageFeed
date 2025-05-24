@@ -1,19 +1,22 @@
 import Foundation
 
 extension URLSession {
-
-    func dataTaskResult(
+    
+    enum HTTPMethod: String {
+        case GET, POST, PUT, DELETE
+    }
+    
+    func objectTask<T: Decodable>(
         for urlRequest: URLRequest,
-        completion: @escaping (Result<Data, Error>) -> Void
+        handler: @escaping (Result<T, Error>) -> Void
     ) -> URLSessionTask {
-        let fulfillCompletionOnMainThread: (Result<Data, Error>)  -> Void = { result in
+        let fulfillCompletionOnMainThread: (Result<T, Error>)  -> Void = { result in
             DispatchQueue.main.async {
-                completion(result)
+                handler(result)
             }
         }
         
         let task = dataTask(with: urlRequest) { data, response, error in
-            
             if let error {
                 fulfillCompletionOnMainThread(.failure(NetworkError.urlRequestError(error)))
                 return
@@ -27,13 +30,54 @@ extension URLSession {
                 return
             }
                                               
-            if 200..<300 ~= response.statusCode {
+            guard
+                200..<300 ~= response.statusCode
+            else {
+                fulfillCompletionOnMainThread(.failure(NetworkError.httpStatusCode(response.statusCode)))
+                return
+            }
+            
+            if let data: T = self.decode(data: data) {
                 fulfillCompletionOnMainThread(.success(data))
             } else {
-                fulfillCompletionOnMainThread(.failure(NetworkError.httpStatusCode(response.statusCode)))
+                fulfillCompletionOnMainThread(.failure(ParseError.decodeError(T: T.self)))
             }
         }
         
         return task
+    }
+
+    func objectTask<T: Decodable>(
+        urlString: String,
+        httpMethod: HTTPMethod = .GET,
+        headerFields: [String: String] = [:],
+        handler: @escaping (Result<T, Error>) -> Void
+    ) throws -> URLSessionTask {
+        
+        guard
+            let url = URL(string: urlString)
+        else {
+            throw NetworkError.invalidURLString
+        }
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = httpMethod.rawValue
+        urlRequest.allHTTPHeaderFields = headerFields
+
+        return objectTask(
+            for: urlRequest,
+            handler: handler
+        )
+    }
+    
+    private func decode<T: Decodable>(
+        data: Data
+    ) -> T? {
+        let decoder = JSONDecoder()
+        return try?
+        decoder.decode(
+            T.self,
+            from: data
+        )
     }
 }

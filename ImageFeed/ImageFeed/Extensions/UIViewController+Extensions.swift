@@ -1,12 +1,29 @@
 import UIKit
 
 extension UIViewController {
-    func route(to vcID: String, completion: (() -> Void)? = nil) {
+    func route(
+        to vc: UIViewController,
+        completion: (() -> Void)? = nil
+    ) {
+        navigationController?.pushViewController(vc, animated: true)
+        completion?()
+    }
+    
+    func popViewController(completion: (() -> Void)? = nil) {
+        navigationController?.popViewController(animated: true)
+        completion?()
+    }
+    
+    func setRootViewController(
+        vc viewController: UIViewController,
+        completion: (() -> Void)? = nil
+    ) {
         guard let window = UIApplication.shared.windows.first else {
             fatalError("Invalid Configuration")
         }
-        let viewController = UIStoryboard(name: "Main", bundle: .main).instantiateViewController(withIdentifier: vcID)
-        window.rootViewController = viewController
+        let navigationController = UINavigationController(rootViewController: viewController)
+        navigationController.isNavigationBarHidden = true
+        window.rootViewController = navigationController
         completion?()
     }
 }

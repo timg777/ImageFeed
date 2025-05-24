@@ -1,35 +1,138 @@
 import UIKit
+import Kingfisher
 
 final class UserProfileViewController: UIViewController {
     
-    // MARK: - Private Constants
-    private let userProfileImage = UIImageView()
-    private let logoutButton = UIButton()
-    private let usernameLabel = UILabel()
-    private let nicknameLabel = UILabel()
-    private let aboutUserLabel = UILabel()
-    private let favoriteLabel = UILabel()
-    private let emptyFavotiesImageView = UIImageView()
+    // MARK: - Private Views
+    private lazy var userProfileImage: UIImageView = {
+        .init()
+    }()
+    private lazy var logoutButton: UIButton = {
+        .init()
+    }()
+    private lazy var usernameLabel: UILabel = {
+        .init()
+    }()
+    private lazy var nicknameLabel: UILabel = {
+        .init()
+    }()
+    private lazy var aboutUserLabel: UILabel = {
+        .init()
+    }()
+    private lazy var favoriteLabel: UILabel = {
+        .init()
+    }()
+    private lazy var emptyFavotiesImageView: UIImageView = {
+        .init()
+    }()
     
-    private let storage = OAuth2TokenStorage.shared
+    // MARK: - Private Constants
+    private let storage: StorageProtocol = Storage.shared
+    private let secureStorage: SecureStorageProtocol = SecureStorage.shared
+    private let profileService = ProfileService.shared
+    private let profileImageService = ProfileImageService.shared
+    
+    private var profileImageServiceObserver: NSObjectProtocol?
     
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        observeProfileImageURLNotification()
         setUpViews()
+        updateLabels()
     }
 }
 
 // MARK: - Extensions + Private Buttons Actions
 private extension UserProfileViewController {
     @objc func logoutButtonTapped() {
-        route(
-            to: GlobalNamespace.greetingControllerIdentifier,
-            completion: { [weak self] in
-                self?.storage.token = nil
+        let viewController = SplashViewController()
+        setRootViewController(vc: viewController) { [weak self] in
+            self?.handleSecureStorageTokenDelete()
+        }
+    }
+}
+
+// MARK: - Extensions + Private UI Updates
+private extension UserProfileViewController {
+    
+    func updateProfileImage(using profileImageURLString: String) {
+        
+        guard let profileImageURL = URL(string: profileImageURLString) else {
+            logErrorToSTDIO(
+                errorDescription: "Failed to create URL using user profile photo URL String -> \(profileImageURLString)"
+            )
+            return
+        }
+        
+        ImageCache.default.clearMemoryCache()
+        ImageCache.default.clearDiskCache()
+        
+        let processor = RoundCornerImageProcessor(cornerRadius: 20)
+        
+        userProfileImage.kf.indicatorType = .activity
+        userProfileImage.kf.setImage(
+            with: profileImageURL,
+            placeholder: UIImage(named: "Userpick-Stub"),
+            options: [
+                .processor(processor)
+            ]) { [weak self] result in
+                guard let self else { return }
+                switch result {
+                case .success(let imageResult):
+                    userProfileImage.image = imageResult.image
+                case .failure(let error):
+                    logErrorToSTDIO(
+                        errorDescription: error.localizedDescription
+                    )
+                }
             }
-        )
+
+    }
+    
+    func updateLabels() {
+        guard
+            let profile = profileService.profile
+        else {
+            logErrorToSTDIO(
+                errorDescription: "Failed to retrieve user ProfileService.profile. No user profile has been found"
+            )
+            return
+        }
+        
+        usernameLabel.text = profile.name
+        nicknameLabel.text = profile.loginName
+        aboutUserLabel.text = profile.bio
+    }
+}
+
+// MARK: - Extensions + Private Helpers
+private extension UserProfileViewController {
+    func handleSecureStorageTokenDelete() {
+        secureStorage.removeToken()
+    }
+    
+    func observeProfileImageURLNotification() {
+        profileImageServiceObserver = NotificationCenter.default
+            .addObserver(
+                forName: ProfileImageService.shared.didChangeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                guard let self else { return }
+                
+                guard
+                    let profileImageURLString = notification.userInfo?[UserInfoKey.profileImageURLString.rawValue] as? String
+                else {
+                    logErrorToSTDIO(
+                        errorDescription: "No profileImageURLString found in notification"
+                    )
+                    return
+                }
+
+                updateProfileImage(using: profileImageURLString)
+            }
     }
 }
 
@@ -133,7 +236,10 @@ private extension UserProfileViewController {
     }
     
     func setUpLogoutButton() {
-        logoutButton.setImage(UIImage(named: "Exit"), for: .normal)
+        logoutButton.setImage(
+            UIImage(named: "Exit"),
+            for: .normal
+        )
         logoutButton.imageView?.contentMode = .scaleAspectFit
         logoutButton.translatesAutoresizingMaskIntoConstraints = false
         
@@ -145,12 +251,16 @@ private extension UserProfileViewController {
             logoutButton.widthAnchor.constraint(
                 equalToConstant: UserProfileViewConstraints.logoutButton_WidthHeightConstant.rawValue
             ),
-            logoutButton.heightAnchor.constraint(equalTo: logoutButton.widthAnchor), // 1:1
+            logoutButton.heightAnchor.constraint(
+                equalTo: logoutButton.widthAnchor
+            ), // 1:1
             logoutButton.trailingAnchor.constraint(
                 equalTo: view.safeAreaLayoutGuide.trailingAnchor,
                 constant: UserProfileViewConstraints.trailingAnchorConstant.rawValue
             ),
-            logoutButton.centerYAnchor.constraint(equalTo: userProfileImage.centerYAnchor),
+            logoutButton.centerYAnchor.constraint(
+                equalTo: userProfileImage.centerYAnchor
+            ),
         ])
     }
   
@@ -179,13 +289,19 @@ private extension UserProfileViewController {
         view.addSubview(emptyFavotiesImageView)
         
         NSLayoutConstraint.activate([
-            emptyFavotiesImageView.widthAnchor.constraint(equalToConstant: 115),
-            emptyFavotiesImageView.heightAnchor.constraint(equalTo: emptyFavotiesImageView.widthAnchor), // 1:1
+            emptyFavotiesImageView.widthAnchor.constraint(
+                equalToConstant: 115
+            ),
+            emptyFavotiesImageView.heightAnchor.constraint(
+                equalTo: emptyFavotiesImageView.widthAnchor
+            ), // 1:1
             emptyFavotiesImageView.topAnchor.constraint(
                 equalTo: favoriteLabel.bottomAnchor,
                 constant: UserProfileViewConstraints.emptyFavotiesImageView_WidthHeightConstant.rawValue
             ),
-            emptyFavotiesImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            emptyFavotiesImageView.centerXAnchor.constraint(
+                equalTo: view.centerXAnchor
+            )
         ])
     }
 }

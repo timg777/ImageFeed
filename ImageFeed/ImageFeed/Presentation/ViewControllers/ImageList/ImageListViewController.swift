@@ -2,50 +2,55 @@ import UIKit
 
 final class ImageListViewController: UIViewController {
 
-    // MARK: - IB Outlets
-    @IBOutlet private weak var tableView: UITableView!
+    // MARK: - Private Views
+    private lazy var tableView: UITableView = {
+        .init()
+    }()
     
     // MARK: - Private Contants
     private var photosNames: [String] = (0..<20).map { "\($0)" }
-    private let singleImageSegueIdentifier = "ShowSingleImage"
     
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        tableView.dataSource = self
-        tableView.delegate = self
-        tableView.backgroundColor = .ypBlack
+        tableView.register(
+            ImagesListCell.self,
+            forCellReuseIdentifier: ImagesListCell.reuseIdentifier
+        )
+        setUpViews()
     }
 }
 
-// MARK: - Extensions + Internal Segue Preparing
-extension ImageListViewController {
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == singleImageSegueIdentifier {
-            guard
-                let indexPath = sender as? IndexPath,
-                let destinationViewController = segue.destination as? SingleImageViewController
-            else {
-                assertionFailure("Ivalid Segue Destination")
-                return
-            }
-            
-            let image = UIImage(named: photosNames[safe: indexPath.row] ?? "")
-            destinationViewController.image = image
-        } else {
-            super.prepare(for: segue, sender: sender)
-        }
+// MARK: - Extensions + Private Routing
+private extension ImageListViewController {
+    func routeToSingleImage(with indexPath: IndexPath) {
+        tableView.deselectRow(
+            at: indexPath,
+            animated: true
+        )
+        let singleImageViewController = SingleImageViewController()
+        singleImageViewController.image = UIImage(named: photosNames[safe: indexPath.row] ?? "")
+        navigationController?.pushViewController(
+            singleImageViewController,
+            animated: true
+        )
     }
 }
 
 // MARK: - Extensions + Internal UITableViewDelegate Conformance
 extension ImageListViewController: UITableViewDelegate {
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        performSegue(withIdentifier: singleImageSegueIdentifier, sender: indexPath)
+    func tableView(
+        _ tableView: UITableView,
+        didSelectRowAt indexPath: IndexPath
+    ) {
+        routeToSingleImage(with: indexPath)
     }
 
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+    func tableView(
+        _ tableView: UITableView,
+        heightForRowAt indexPath: IndexPath
+    ) -> CGFloat {
         guard let image = UIImage(named: photosNames[safe: indexPath.row] ?? "") else {
             return 0
         }
@@ -61,19 +66,68 @@ extension ImageListViewController: UITableViewDelegate {
 
 // MARK: - Extensions + Intrnal UITableViewDataSource Conformance
 extension ImageListViewController: UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(
+        _ tableView: UITableView,
+        numberOfRowsInSection section: Int
+    ) -> Int {
         photosNames.count
     }
     
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: ImagesListCell.reuseIdentifier, for: indexPath)
+    func tableView(
+        _ tableView: UITableView,
+        cellForRowAt indexPath: IndexPath
+    ) -> UITableViewCell {
         
-        guard let cell = cell as? ImagesListCell else {
+        let reuseIdentifier = ImagesListCell.reuseIdentifier
+        
+        guard
+            let cell = tableView.dequeueReusableCell(
+                withIdentifier: reuseIdentifier,
+                for: indexPath
+            ) as? ImagesListCell
+        else {
+            logErrorToSTDIO(
+                errorDescription: "Cant dequeue cell with reuseIdentifier: \(reuseIdentifier)"
+            )
             return UITableViewCell()
         }
+
         
         let photoName = photosNames[safe: indexPath.row] ?? ""
         cell.configureListCell(with: photoName)
         return cell
+    }
+}
+
+// MARK: - Extensions + Private Setting Up Views
+private extension ImageListViewController {
+    func setUpViews() {
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.backgroundColor = .ypBlack
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        
+        view.addSubview(tableView)
+        
+        NSLayoutConstraint.activate([
+            tableView.widthAnchor.constraint(
+                equalToConstant: view.bounds.width
+            ),
+            tableView.heightAnchor.constraint(
+                equalToConstant: view.bounds.height
+            ),
+            tableView.topAnchor.constraint(
+                equalTo: view.topAnchor
+            ),
+            tableView.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor
+            ),
+            tableView.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor
+            ),
+            tableView.bottomAnchor.constraint(
+                equalTo: view.bottomAnchor
+            )
+        ])
     }
 }
