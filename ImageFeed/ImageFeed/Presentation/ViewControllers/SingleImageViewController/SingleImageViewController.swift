@@ -1,4 +1,5 @@
 import UIKit
+import Kingfisher
 
 final class SingleImageViewController: UIViewController {
     
@@ -20,15 +21,35 @@ final class SingleImageViewController: UIViewController {
     }()
     
     // MARK: - Inernal Properties
-    var image: UIImage? {
+    var imageSize: CGSize?
+    var imageURLString: String? {
         didSet {
-            guard let image, isViewLoaded else { return }
-            imageView.image = image
-            imageView.frame.size = image.size
-            rescaleAndCenterImageInScrollView(image: image)
+            guard let imageURLString, isViewLoaded else { return }
+            guard
+                let imageURL = URL(string: imageURLString)
+            else {
+                logErrorToSTDIO(
+                    errorDescription: "Failed to create URL from string: \(imageURLString)"
+                )
+                return
+            }
+            imageView.kf.setImage(
+                with: imageURL,
+                placeholder: UIImage(named: "Mark-Stub")
+            ) { [weak self] result in
+                guard let self else { return }
+                switch result {
+                case .success(let imageData):
+                    imageView.image = imageData.image
+                case .failure(let error):
+                    logErrorToSTDIO(
+                        errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
+                    )
+                }
+            }
         }
     }
-
+    
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -40,7 +61,7 @@ final class SingleImageViewController: UIViewController {
     override func viewIsAppearing(_ animated: Bool) {
         super.viewIsAppearing(animated)
 
-        guard let image else { return }
+        guard let image = imageView.image else { return }
         rescaleAndCenterImageInScrollView(image: image)
     }
 }
@@ -62,7 +83,7 @@ private extension SingleImageViewController {
         #warning("TODO: handle liking an image")
     }
     @objc func didTapShareButton() {
-        guard let image else {
+        guard let image = imageView.image else {
             logErrorToSTDIO(
                 errorDescription: "Failed to share image because no image was set"
             )
@@ -72,9 +93,13 @@ private extension SingleImageViewController {
             activityItems: [image],
             applicationActivities: nil
         )
-        present(activityController, animated: true, completion: nil)
+        present(
+            activityController,
+            animated: true
+        )
     }
     @objc func didTapBackButton() {
+        imageView.kf.cancelDownloadTask()
         popViewController()
     }
 }
@@ -157,9 +182,8 @@ private extension SingleImageViewController {
     }
     
     func setUpImage() {
-        guard let image else { return }
-        imageView.image = image
-        imageView.frame.size = image.size
+        guard let imageSize else { return }
+        imageView.frame.size = imageSize
         imageView.contentMode = .scaleAspectFit
         imageView.isUserInteractionEnabled = false
         imageView.translatesAutoresizingMaskIntoConstraints = false
@@ -180,10 +204,10 @@ private extension SingleImageViewController {
                 equalTo: scrollView.contentLayoutGuide.bottomAnchor
             ),
             imageView.widthAnchor.constraint(
-                equalToConstant: image.size.width
+                equalToConstant: imageSize.width
             ),
             imageView.heightAnchor.constraint(
-                equalToConstant: image.size.height
+                equalToConstant: imageSize.height
             )
         ])
     }
@@ -264,7 +288,7 @@ private extension SingleImageViewController {
     func setUpScrollView() {
         scrollView.minimumZoomScale = 0.1
         scrollView.maximumZoomScale = 1.25
-        scrollView.contentSize = image?.size ?? .zero
+        scrollView.contentSize = imageView.image?.size ?? .zero
         scrollView.backgroundColor = .ypBlack
         scrollView.contentMode = .scaleAspectFit
         scrollView.translatesAutoresizingMaskIntoConstraints = false

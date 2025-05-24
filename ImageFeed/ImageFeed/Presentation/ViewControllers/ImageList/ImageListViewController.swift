@@ -8,17 +8,24 @@ final class ImageListViewController: UIViewController {
     }()
     
     // MARK: - Private Contants
-    private var photosNames: [String] = (0..<20).map { "\($0)" }
+    private let imagesListService: ImagesListServiceProtocol = ImagesListService()
     
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
+        imagesListService.fetchPhotosNextPage()
         tableView.register(
             ImagesListCell.self,
             forCellReuseIdentifier: ImagesListCell.reuseIdentifier
         )
-        setUpViews()
+        
+        NotificationCenter.default.addObserver(
+            forName: ImagesListService.imagesListServiceDidChangeNotification,
+            object: nil,
+            queue: .main) { [weak self] _ in
+                self?.setUpViews()
+            }
     }
 }
 
@@ -30,7 +37,9 @@ private extension ImageListViewController {
             animated: true
         )
         let singleImageViewController = SingleImageViewController()
-        singleImageViewController.image = UIImage(named: photosNames[safe: indexPath.row] ?? "")
+        let photo = imagesListService.photos[safe: indexPath.row]
+        singleImageViewController.imageURLString = photo?.largeImageURLString
+        singleImageViewController.imageSize = photo?.size
         navigationController?.pushViewController(
             singleImageViewController,
             animated: true
@@ -51,16 +60,28 @@ extension ImageListViewController: UITableViewDelegate {
         _ tableView: UITableView,
         heightForRowAt indexPath: IndexPath
     ) -> CGFloat {
-        guard let image = UIImage(named: photosNames[safe: indexPath.row] ?? "") else {
-            return 0
-        }
+        let lastLoadedPage = imagesListService.lastLoadedPage ?? 0
+        let photoIndex = (lastLoadedPage * GlobalNamespace.imagesListServicePhotosPerPageCount) + lastLoadedPage
+        let imageSize = imagesListService.photos[safe: photoIndex]?.size ?? .zero
         
         let imageInsets = GlobalNamespace.imageInsets
         let imageViewWidth = tableView.bounds.width - imageInsets.left - imageInsets.right
-        let imageWidth = image.size.width
+        let imageWidth = imageSize.width
         let scale = imageViewWidth / (imageWidth == 0 ? 1 : imageWidth)
-        let cellHeight = image.size.height * scale + imageInsets.top + imageInsets.bottom
+        let cellHeight = imageSize.height * scale + imageInsets.top + imageInsets.bottom
         return cellHeight
+//        return 252
+    }
+    
+    func tableView(
+        _ tableView: UITableView,
+        willDisplay cell: UITableViewCell,
+        forRowAt indexPath: IndexPath
+    ) {
+        tableView.reloadRows(at: [indexPath], with: .middle)
+//        imagesListService.fetchPhotosNextPage()
+        #warning("TODO: <#comment#>")
+
     }
 }
 
@@ -70,7 +91,7 @@ extension ImageListViewController: UITableViewDataSource {
         _ tableView: UITableView,
         numberOfRowsInSection section: Int
     ) -> Int {
-        photosNames.count
+        imagesListService.photos.count
     }
     
     func tableView(
@@ -93,8 +114,12 @@ extension ImageListViewController: UITableViewDataSource {
         }
 
         
-        let photoName = photosNames[safe: indexPath.row] ?? ""
-        cell.configureListCell(with: photoName)
+        let lastLoadedPage = imagesListService.lastLoadedPage ?? 0
+        let photo = imagesListService.photos[safe: indexPath.row]
+        let fullPhotoURLString = photo?.largeImageURLString ?? ""
+        let dateString = photo?.createdAt?.convertToString() ?? "<No date>"
+        let imageLiked = photo?.isLiked ?? false
+        cell.configureListCell(with: fullPhotoURLString, dateString: dateString, imageLiked: imageLiked)
         return cell
     }
 }

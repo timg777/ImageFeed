@@ -47,8 +47,7 @@ final class UserProfileViewController: UIViewController {
 // MARK: - Extensions + Private Buttons Actions
 private extension UserProfileViewController {
     @objc func logoutButtonTapped() {
-        let viewController = SplashViewController()
-        setRootViewController(vc: viewController) { [weak self] in
+        popToRootViewController() { [weak self] in
             self?.handleSecureStorageTokenDelete()
         }
     }
@@ -58,16 +57,12 @@ private extension UserProfileViewController {
 private extension UserProfileViewController {
     
     func updateProfileImage(using profileImageURLString: String) {
-        
         guard let profileImageURL = URL(string: profileImageURLString) else {
             logErrorToSTDIO(
                 errorDescription: "Failed to create URL using user profile photo URL String -> \(profileImageURLString)"
             )
             return
         }
-        
-        ImageCache.default.clearMemoryCache()
-        ImageCache.default.clearDiskCache()
         
         let processor = RoundCornerImageProcessor(cornerRadius: 20)
         
@@ -116,12 +111,11 @@ private extension UserProfileViewController {
     func observeProfileImageURLNotification() {
         profileImageServiceObserver = NotificationCenter.default
             .addObserver(
-                forName: ProfileImageService.shared.didChangeNotification,
+                forName: ProfileImageService.shared.profileImagedidChangeNotification,
                 object: nil,
                 queue: .main
             ) { [weak self] notification in
                 guard let self else { return }
-                
                 guard
                     let profileImageURLString = notification.userInfo?[UserInfoKey.profileImageURLString.rawValue] as? String
                 else {

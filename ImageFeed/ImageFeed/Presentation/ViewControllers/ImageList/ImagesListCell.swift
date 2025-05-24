@@ -1,4 +1,5 @@
 import UIKit
+import Kingfisher
 
 final class ImagesListCell: UITableViewCell {
     
@@ -30,6 +31,12 @@ final class ImagesListCell: UITableViewCell {
         selectionStyle = .gray
     }
     
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        
+        cellImage.kf.cancelDownloadTask()
+    }
+    
     // MARK: - Initialization
     override init(
         style: UITableViewCell.CellStyle,
@@ -44,21 +51,46 @@ final class ImagesListCell: UITableViewCell {
     
     required init?(coder: NSCoder) {
         super.init(coder: coder)
+        
         setupSelectionBackground()
     }
+
 }
 
 // MARK: - Extensions + Internal Configuration
 extension ImagesListCell {
-    func configureListCell(with photoName: String) {
-        guard let image = UIImage(named: photoName) else {
+    func configureListCell(
+        with fullPhotoURLString: String,
+        dateString: String,
+        imageLiked: Bool
+    ) {
+        guard let fullPhotoURL = URL(string: fullPhotoURLString) else {
+            logErrorToSTDIO(
+                errorDescription: "Failed to create URL using full user photo URL String -> \(fullPhotoURLString)"
+            )
             return
         }
         
-        cellImage.image = image
-        dateLabel.text = currentDateString
+        let placeholderImage = UIImage(named: "Mark-Stub")
+        
+        cellImage.kf.setImage(
+            with: fullPhotoURL,
+            placeholder: placeholderImage
+        ) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(let imageData):
+                cellImage.image = imageData.image
+            case .failure(let error):
+                logErrorToSTDIO(
+                    errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
+                )
+            }
+        }
+        
+        dateLabel.text = dateString
 
-        let likeImage = UIImage(named: Bool.random() ? "Like_on" : "Like_off")
+        let likeImage = UIImage(named: imageLiked ? "Like_on" : "Like_off")
         likeButton.setImage(
             likeImage,
             for: .normal
@@ -82,27 +114,10 @@ extension ImagesListCell {
 
 // MARK: - Extensions + Private Helpers
 private extension ImagesListCell {
-    var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .none
-        formatter.locale = Locale(identifier: GlobalNamespace.localizationIdentifier)
-        return formatter
-    }
-    
-    var currentDateString: String {
-        dateFormatter.string(
-            from: Date()
-        ).replacingOccurrences(
-            of: "г.",
-            with: ""
-        )
-    }
-    
     func setupSelectionBackground() {
         let selectedBGView = UIView()
         selectedBGView.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.3)
-        selectedBGView.layer.cornerRadius = 16
+        selectedBGView.layer.cornerRadius = 20
         self.selectedBackgroundView = selectedBGView
     }
 }
@@ -146,7 +161,7 @@ private extension ImagesListCell {
     func setUpDateLabel() {
         dateLabel.textColor = .ypWhite
         dateLabel.attributedText = NSAttributedString(
-            string: "\(currentDateString)",
+            string: "no date",
             attributes: [
                 .foregroundColor: UIColor.ypWhite,
                 .font: UIFont.systemFont(

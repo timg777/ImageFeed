@@ -1,6 +1,6 @@
 import UIKit
 
-final class ProfileImageService {
+final class ProfileImageService: ProfileImageProvider {
     
     enum ImageSizeStrategy: String {
         case small
@@ -11,17 +11,28 @@ final class ProfileImageService {
     static let shared = ProfileImageService()
     private init() {}
     
-    let didChangeNotification = Notification.Name(rawValue: GlobalNamespace.NorificationName.profileImageProviderDidChange.rawValue)
+    let profileImagedidChangeNotification = Notification.Name(rawValue: GlobalNamespace.NorificationName.profileImageProviderDidChange.rawValue)
     
     private(set) var avatarURLString: String?
+    private(set) var task: URLSessionTask?
     
-    func fetchProfileImageURL(username: String, token: String, _ handler: @escaping (Result<String, Error>) -> Void) {
+    func fetchProfileImageURL(
+        username: String,
+        token: String,
+        _ handler: @escaping (Result<String, Error>) -> Void
+    ) {
+        
+        if let _ = task {
+            handler(.failure(NetworkError.repeatedRequest))
+            return
+        }
+        
         let urlString = Constants.Service.profileImage.urlString + username
         let headers: [String:String] = ["Authorization": "Bearer \(token)"]
         let imageSizeStrategy: ImageSizeStrategy = .large
         
         do {
-            let task = try URLSession.shared.objectTask(
+            task = try URLSession.shared.objectTask(
                 urlString: urlString,
                 headerFields: headers
             ) { [weak self] (result: Result<UserResult, Error>) in
@@ -38,19 +49,26 @@ final class ProfileImageService {
                     handler(.success(avatarURLString))
                     NotificationCenter.default
                         .post(
-                            name: ProfileImageService.shared.didChangeNotification,
+                            name: ProfileImageService.shared.profileImagedidChangeNotification,
                             object: self,
                             userInfo: [UserInfoKey.profileImageURLString.rawValue: avatarURLString]
                         )
+                    
+                    task?.cancel()
+                    task = nil
 
                 case .failure(let error):
                     handler(.failure(error))
+                    task?.cancel()
+                    task = nil
                 }
             }
             
-            task.resume()
+            task?.resume()
         } catch {
             handler(.failure(error))
+            task?.cancel()
+            task = nil
         }
     }
 }

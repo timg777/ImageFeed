@@ -14,16 +14,8 @@ extension UIViewController {
         completion?()
     }
     
-    func setRootViewController(
-        vc viewController: UIViewController,
-        completion: (() -> Void)? = nil
-    ) {
-        guard let window = UIApplication.shared.windows.first else {
-            fatalError("Invalid Configuration")
-        }
-        let navigationController = UINavigationController(rootViewController: viewController)
-        navigationController.isNavigationBarHidden = true
-        window.rootViewController = navigationController
+    func popToRootViewController(completion: (() -> Void)? = nil) {
+        navigationController?.popToRootViewController(animated: true)
         completion?()
     }
 }

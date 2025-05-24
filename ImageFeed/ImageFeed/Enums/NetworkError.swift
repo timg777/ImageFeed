@@ -4,6 +4,7 @@ enum NetworkError: TracedError {
     case httpStatusCode(Int)
     case urlRequestError(Error)
     case urlSessionError
+    case repeatedRequest
     
     var description: String {
         switch self {
@@ -17,6 +18,8 @@ enum NetworkError: TracedError {
             "NetworkError - ошибка URLRequest: \(error)"
         case .urlSessionError:
             "NetworkError - ошибка URLSession"
+        case .repeatedRequest:
+            "NetworkError - повторный запрос"
         }
     }
 }

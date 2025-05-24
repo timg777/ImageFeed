@@ -37,6 +37,7 @@ final class ProfileService {
                     )
                     self?.profile = profile
                     handler(.success(profile))
+                    
                 case .failure(let error):
                     handler(.failure(error))
                 }

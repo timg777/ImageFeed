@@ -3,6 +3,7 @@ import UIKit
 struct GlobalNamespace {
     // MARK: - global config
     static let localizationIdentifier = "ru_RU"
+    static let imagesListServicePhotosPerPageCount: Int = 10
     
     // MARK: - Security Data
     static let appName = "com.TIPT.ImageFeed"
@@ -41,6 +42,7 @@ struct GlobalNamespace {
     static let likeButtonShadowOffset: CGSize = .zero
     static let likeButtonShadowColor: CGColor = UIColor.black.cgColor
     
+    // MARK: - Routing
     enum Routing: String {
         case tabBarControllerIdentifier = "TabBarControllerIdentifier"
     }
@@ -48,5 +50,6 @@ struct GlobalNamespace {
     // MARK: - notification identifiers
     enum NorificationName: String {
         case profileImageProviderDidChange
+        case imagesListServiceDidChangeNotification
     }
 }

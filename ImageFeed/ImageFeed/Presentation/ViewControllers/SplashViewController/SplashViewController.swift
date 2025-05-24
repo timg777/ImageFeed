@@ -20,12 +20,9 @@ final class SplashViewController: UIViewController {
 
         if storage.isNotFirstLaunch {
             if let token = handleSecureStorageTokenResult() {
-                fetchUserProfile(by: token)
-                routeToMain()
+//                fetchUserProfile(by: token)
+                dismissAndGoToMain()
             } else {
-                logErrorToSTDIO(
-                    errorDescription: "No token found in KeychainWrapper"
-                )
                 routeToAuthentication()
             }
         } else {
@@ -94,10 +91,9 @@ private extension SplashViewController {
                     username: profile.username,
                     token: token
                 ) { result in
-                    self.dismissAndGoToMain()
                     switch result {
                     case .success(_):
-                        // TODO: - succeeded staff here
+                        // TODO: - handle succeeded request
                         break
                     case .failure(let error):
                         logErrorToSTDIO(
@@ -138,7 +134,7 @@ private extension SplashViewController {
     
     func routeToMain() {
         let tabBarController = TabBarController()
-        setRootViewController(vc: tabBarController)
+        route(to: tabBarController)
     }
 }
 

@@ -5,7 +5,6 @@ func logErrorToSTDIO(
     errorDescription: String
 ) {
     print(
-        "(\(fileID)) [\(function)] in line \(line): \(errorDescription)"
+        "\n(\(fileID)) [\(function)] in line \(line): \(errorDescription)\n"
     )
-    #warning("print here")
 }

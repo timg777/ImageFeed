@@ -6,6 +6,8 @@ final class TabBarController: UITabBarController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+//        let imageListViewController = UIViewController()
+//        imageListViewController.view.backgroundColor = .ypBlack
         let imageListViewController = ImageListViewController()
         imageListViewController.tabBarItem =
         UITabBarItem(

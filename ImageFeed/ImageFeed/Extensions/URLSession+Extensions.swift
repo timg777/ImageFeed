@@ -15,7 +15,7 @@ extension URLSession {
                 handler(result)
             }
         }
-        
+
         let task = dataTask(with: urlRequest) { data, response, error in
             if let error {
                 fulfillCompletionOnMainThread(.failure(NetworkError.urlRequestError(error)))
@@ -51,11 +51,12 @@ extension URLSession {
         urlString: String,
         httpMethod: HTTPMethod = .GET,
         headerFields: [String: String] = [:],
+        parameters: [String: String] = [:],
         handler: @escaping (Result<T, Error>) -> Void
     ) throws -> URLSessionTask {
-        
+    
         guard
-            let url = URL(string: urlString)
+            let url = parameters.isEmpty ? URL(string: urlString) : createURL(base: urlString, with: parameters)
         else {
             throw NetworkError.invalidURLString
         }
@@ -63,7 +64,7 @@ extension URLSession {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = httpMethod.rawValue
         urlRequest.allHTTPHeaderFields = headerFields
-
+        
         return objectTask(
             for: urlRequest,
             handler: handler
@@ -79,5 +80,14 @@ extension URLSession {
             T.self,
             from: data
         )
+    }
+    
+    private func createURL(
+        base urlString: String,
+        with parameters: [String: String]
+    ) -> URL? {
+        var urlComponents = URLComponents(string: urlString)
+        urlComponents?.queryItems = parameters.map { return URLQueryItem(name: $0, value: $1) }
+        return urlComponents?.url
     }
 }
