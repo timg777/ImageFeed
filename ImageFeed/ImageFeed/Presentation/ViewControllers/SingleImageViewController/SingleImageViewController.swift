@@ -3,11 +3,21 @@ import UIKit
 final class SingleImageViewController: UIViewController {
     
     // MARK: - Private Views
-    private let scrollView = UIScrollView()
-    private let imageView = UIImageView()
-    private let shareButton = UIButton()
-    private let backButton = UIButton()
-    private let likeButton = UIButton()
+    private lazy var scrollView:  UIScrollView = {
+        .init()
+    }()
+    private lazy var imageView:  UIImageView = {
+        .init()
+    }()
+    private lazy var shareButton:  UIButton = {
+        .init()
+    }()
+    private lazy var backButton:  UIButton = {
+        .init()
+    }()
+    private lazy var likeButton:  UIButton = {
+        .init()
+    }()
     
     // MARK: - Inernal Properties
     var image: UIImage? {

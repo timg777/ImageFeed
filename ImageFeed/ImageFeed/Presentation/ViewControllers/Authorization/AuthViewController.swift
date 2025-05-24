@@ -1,18 +1,21 @@
 import UIKit
-import KeychainWrapper
 
 final class AuthViewController: UIViewController {
     
     // MARK: - Private Constants
     private let storage: StorageProtocol = Storage.shared
-    private let secureStorage = KeychainWrapper.default
+    private let secureStorage: SecureStorageProtocol = SecureStorage.shared
     
     // MARK: - Private Properties
     private var alertPresenter: AlertPresenterProtocol?
     
     // MARK: - IB Outlets
-    private let loginButton = UIButton()
-    private let logoImageView = UIImageView()
+    private lazy var loginButton: UIButton = {
+        .init()
+    }()
+    private lazy var logoImageView: UIImageView = {
+        .init()
+    }()
     
     // MARK: - Properties
     weak var delegate: AuthViewControllerDelegate?
@@ -30,10 +33,10 @@ final class AuthViewController: UIViewController {
 extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
         
-        UIBlockingActivityIndicator.shared.showActivityIndicator()
+        UIBlockingActivityIndicator.showActivityIndicator()
         
         OAuth2Service.shared.fetchOAuthToken(code: code) { [weak self] result in
-            UIBlockingActivityIndicator.shared.dismissActivityIndicator()
+            UIBlockingActivityIndicator.dismissActivityIndicator()
             guard let self else { return }
             switch result {
             case .success(let token):
@@ -75,10 +78,7 @@ private extension AuthViewController {
     }
     
     func handleSecureStorageTokenUpdate(_ token: String) {
-        secureStorage.set(
-            token,
-            forKey: GlobalNamespace.oAuthTokenKeyChainIdentifier
-        )
+        secureStorage.setToken(token)
     }
 }
 

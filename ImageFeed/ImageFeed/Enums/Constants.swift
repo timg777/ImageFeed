@@ -6,4 +6,19 @@ enum Constants {
     static let redirectURI = "urn:ietf:wg:oauth:2.0:oob"
     static let accessScope = "public+read_user+write_user+read_photos+write_photos+write_likes+write_followers+read_collections+write_collections"
     static let defaultBaseURL = URL(string: "https://unsplash.com/")
+    static let apiDefaultBaseURLString = "https://api.unsplash.com/"
+    
+    enum Service {
+        case profileImage
+        case profile
+        
+        var urlString: String {
+            switch self {
+            case .profileImage:
+                apiDefaultBaseURLString + "user/"
+            case .profile:
+                apiDefaultBaseURLString + "me"
+            }
+        }
+    }
 }

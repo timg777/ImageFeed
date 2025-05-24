@@ -18,7 +18,7 @@ final class ProfileService {
         handler: @escaping (Result<Profile, Error>) -> Void
     ) {
 
-        let urlString = "https://api.unsplash.com/me"
+        let urlString = Constants.Service.profile.urlString
         let headers: [String:String] = ["Authorization": "Bearer \(token)"]
         
         do {

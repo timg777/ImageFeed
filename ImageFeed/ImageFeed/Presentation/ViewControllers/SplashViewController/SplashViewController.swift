@@ -1,15 +1,15 @@
 import UIKit
-import KeychainWrapper
 
 final class SplashViewController: UIViewController {
     
     // MARK: - Private Views
-    private let launchImage = UIImageView()
+    private lazy var launchImage: UIImageView = {
+        .init()
+    }()
     
     // MARK: - Private Constants
     private var storage: StorageProtocol = Storage.shared
-    private let secureStorage = KeychainWrapper.default
-    private let activityIndicator = UIBlockingActivityIndicator.shared
+    private let secureStorage: SecureStorageProtocol = SecureStorage.shared
     private let profileService = ProfileService.shared
     private let profileImageService = ProfileImageService.shared
     
@@ -51,7 +51,7 @@ extension SplashViewController {
 // MARK: - Extensions + Internal AuthViewControllerDelegate Conformance
 extension SplashViewController: AuthViewControllerDelegate {
     func didAuthenticate(_ vc: AuthViewController) {
-        activityIndicator.showActivityIndicator()
+        UIBlockingActivityIndicator.showActivityIndicator()
         guard let token = handleSecureStorageTokenResult() else {
             logErrorToSTDIO(
                 errorDescription: "Failed to handle secure storage token result"
@@ -75,14 +75,10 @@ private extension SplashViewController {
     @discardableResult
     func handleSecureStorageTokenResult(remove: Bool = false) -> String? {
         if remove {
-            secureStorage.removeObject(
-                forKey: GlobalNamespace.oAuthTokenKeyChainIdentifier
-            )
+            secureStorage.removeToken()
             return nil
         } else {
-            return secureStorage.string(
-                forKey: GlobalNamespace.oAuthTokenKeyChainIdentifier
-            )
+            return secureStorage.getToken()
         }
     }
     
@@ -125,7 +121,7 @@ private extension SplashViewController {
             guard let self else { return }
             dismiss(animated: true) { [weak self] in
                 guard let self else { return }
-                activityIndicator.dismissActivityIndicator()
+                UIBlockingActivityIndicator.dismissActivityIndicator()
                 routeToMain()
             }
         }

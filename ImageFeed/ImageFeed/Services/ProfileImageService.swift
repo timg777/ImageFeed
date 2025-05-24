@@ -16,7 +16,7 @@ final class ProfileImageService {
     private(set) var avatarURLString: String?
     
     func fetchProfileImageURL(username: String, token: String, _ handler: @escaping (Result<String, Error>) -> Void) {
-        let urlString = "https://api.unsplash.com/users/\(username)"
+        let urlString = Constants.Service.profileImage.urlString + username
         let headers: [String:String] = ["Authorization": "Bearer \(token)"]
         let imageSizeStrategy: ImageSizeStrategy = .large
         

@@ -1,21 +1,34 @@
 import UIKit
 import Kingfisher
-import KeychainWrapper
 
 final class UserProfileViewController: UIViewController {
     
     // MARK: - Private Views
-    private let userProfileImage = UIImageView()
-    private let logoutButton = UIButton()
-    private let usernameLabel = UILabel()
-    private let nicknameLabel = UILabel()
-    private let aboutUserLabel = UILabel()
-    private let favoriteLabel = UILabel()
-    private let emptyFavotiesImageView = UIImageView()
+    private lazy var userProfileImage: UIImageView = {
+        .init()
+    }()
+    private lazy var logoutButton: UIButton = {
+        .init()
+    }()
+    private lazy var usernameLabel: UILabel = {
+        .init()
+    }()
+    private lazy var nicknameLabel: UILabel = {
+        .init()
+    }()
+    private lazy var aboutUserLabel: UILabel = {
+        .init()
+    }()
+    private lazy var favoriteLabel: UILabel = {
+        .init()
+    }()
+    private lazy var emptyFavotiesImageView: UIImageView = {
+        .init()
+    }()
     
     // MARK: - Private Constants
     private let storage: StorageProtocol = Storage.shared
-    private let secureStorage = KeychainWrapper.default
+    private let secureStorage: SecureStorageProtocol = SecureStorage.shared
     private let profileService = ProfileService.shared
     private let profileImageService = ProfileImageService.shared
     
@@ -97,7 +110,7 @@ private extension UserProfileViewController {
 // MARK: - Extensions + Private Helpers
 private extension UserProfileViewController {
     func handleSecureStorageTokenDelete() {
-        secureStorage.removeObject(forKey: GlobalNamespace.oAuthTokenKeyChainIdentifier)
+        secureStorage.removeToken()
     }
     
     func observeProfileImageURLNotification() {

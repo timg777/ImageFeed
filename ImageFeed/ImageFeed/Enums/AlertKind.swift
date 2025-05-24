@@ -4,7 +4,7 @@ enum AlertKind {
     var header: String {
         switch self {
         case .authError:
-            "Что-то пошло не так"
+            "Что-то пошло не так("
         }
     }
     

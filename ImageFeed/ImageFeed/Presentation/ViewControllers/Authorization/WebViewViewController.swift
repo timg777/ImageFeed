@@ -11,9 +11,15 @@ final class WebViewViewController: UIViewController {
     private let oauth2Service = OAuth2Service.shared
     
     // MARK: - Private Views
-    private let webView = WKWebView()
-    private let progressView = UIProgressView()
-    private let backButton = UIButton()
+    private lazy var webView: WKWebView = {
+        .init()
+    }()
+    private lazy var progressView: UIProgressView = {
+        .init()
+    }()
+    private lazy var backButton: UIButton = {
+        .init()
+    }()
     
     // MARK: - Internal Properties
     weak var delegate: WebViewViewControllerDelegate?

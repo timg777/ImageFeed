@@ -3,7 +3,9 @@ import UIKit
 final class ImageListViewController: UIViewController {
 
     // MARK: - Private Views
-    private let tableView = UITableView()
+    private lazy var tableView: UITableView = {
+        .init()
+    }()
     
     // MARK: - Private Contants
     private var photosNames: [String] = (0..<20).map { "\($0)" }

@@ -3,9 +3,15 @@ import UIKit
 final class ImagesListCell: UITableViewCell {
     
     // MARK: - Private Views
-    private let dateLabel = UILabel()
-    private let cellImage = UIImageView()
-    private let likeButton = UIButton()
+    private lazy var dateLabel: UILabel = {
+        .init()
+    }()
+    private lazy var cellImage: UIImageView = {
+        .init()
+    }()
+    private lazy var likeButton: UIButton = {
+        .init()
+    }()
     
     // MARK: - Static Constants
     static let reuseIdentifier = "ImagesListCell"
