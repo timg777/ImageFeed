@@ -1,4 +1,5 @@
-struct OAuthTokenResponseBody: Decodable {
+// MARK: - OAuth2 token response body model
+struct OAuth2TokenResponseBody: Decodable {
     let access_token: String
     let token_type: String
     let scope: String

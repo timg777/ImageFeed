@@ -1,7 +1,7 @@
 import Foundation
 
-protocol ProfileImageProvider {
-    var profileImagedidChangeNotification: Notification.Name { get }
+protocol ProfileImageProtocol {
+    static var shared: Self { get }
     var avatarURLString: String? { get }
     var task: URLSessionTask? { get }
     func fetchProfileImageURL(

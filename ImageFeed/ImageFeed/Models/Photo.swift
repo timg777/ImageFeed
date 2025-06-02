@@ -1,11 +1,16 @@
 import Foundation
 
-struct Photo: Equatable {
+// MARK: - Converted unsplash photo model
+struct Photo: Hashable {
     let id: String
     let size: CGSize
-    let createdAt: Date?
+    let createdAt: String?
     let welcomeDescription: String?
     let thumbImageURLString: String
     let largeImageURLString: String
-    let isLiked: Bool
+    private(set) var isLiked: Bool
+    
+    mutating func toggleLike() {
+        isLiked.toggle()
+    }
 }

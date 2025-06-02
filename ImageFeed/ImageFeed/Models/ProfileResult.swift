@@ -1,3 +1,4 @@
+// MARK: - Unsplaash user profile result model
 struct ProfileResult: Codable {
     let username: String?
     let first_name: String?

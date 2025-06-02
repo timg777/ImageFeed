@@ -7,7 +7,7 @@ final class ImagesListCell: UITableViewCell {
     private lazy var dateLabel: UILabel = {
         .init()
     }()
-    private lazy var cellImage: UIImageView = {
+    private(set) lazy var cellImage: UIImageView = {
         .init()
     }()
     private lazy var likeButton: UIButton = {
@@ -16,6 +16,12 @@ final class ImagesListCell: UITableViewCell {
     
     // MARK: - Static Constants
     static let reuseIdentifier = "ImagesListCell"
+    
+    // MARK: - Private Properties
+    private var fullPhotoURLString: String?
+    
+    // MARK: - Indernal Properties
+    weak var delegate: ImagesListCellDelegate?
     
     // MARK: - View Life Cycles
     override func didMoveToWindow() {
@@ -29,11 +35,38 @@ final class ImagesListCell: UITableViewCell {
         
         selectedBackgroundView?.frame = contentView.bounds.inset(by: GlobalNamespace.tableViewEdgeInsets)
         selectionStyle = .gray
+        
+        guard
+            let fullPhotoURLString,
+            let fullPhotoURL = URL(string: fullPhotoURLString)
+        else {
+            logErrorToSTDIO(
+                errorDescription: "Failed to create URL using full user photo URL String -> \(fullPhotoURLString ?? "NO STRING")"
+            )
+            return
+        }
+        
+        cellImage.layer.removeGradientAnimationSublayers()
+        cellImage.layer.addGradientLoadingAnimation(cornerRadius: 20)
+        
+        cellImage.kf.setImage(
+            with: fullPhotoURL
+        ) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success:
+                cellImage.contentMode = .scaleAspectFill
+            case .failure:
+                cellImage.image = UIImage(named: "Mark-Stub")
+            }
+            cellImage.layer.removeGradientAnimationSublayers()
+        }
     }
     
     override func prepareForReuse() {
         super.prepareForReuse()
         
+        cellImage.contentMode = .center
         cellImage.kf.cancelDownloadTask()
     }
     
@@ -57,42 +90,42 @@ final class ImagesListCell: UITableViewCell {
 
 }
 
-// MARK: - Extensions + Internal Configuration
-extension ImagesListCell {
-    func configureListCell(
-        with fullPhotoURLString: String,
-        dateString: String,
-        imageLiked: Bool
-    ) {
-        guard let fullPhotoURL = URL(string: fullPhotoURLString) else {
-            logErrorToSTDIO(
-                errorDescription: "Failed to create URL using full user photo URL String -> \(fullPhotoURLString)"
-            )
-            return
-        }
-        
-        let placeholderImage = UIImage(named: "Mark-Stub")
-        
-        cellImage.kf.setImage(
-            with: fullPhotoURL,
-            placeholder: placeholderImage
-        ) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success(let imageData):
-                cellImage.image = imageData.image
-            case .failure(let error):
-                logErrorToSTDIO(
-                    errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
-                )
-            }
-        }
-        
-        dateLabel.text = dateString
+// MARK: - Extensions + Private ImagesListCell Button Handlers
+private extension ImagesListCell {
+    @objc func likeButtonTapped() {
+        delegate?.didTapLike(self)
+    }
+}
 
+// MARK: - Extensions + Internal ImagesListCell Configuration
+extension ImagesListCell {
+    func configureListCell(photo: Photo?) {
+        let fullPhotoURLString = photo?.largeImageURLString ?? ""
+        
+        let imageLiked = photo?.isLiked ?? false
+        
+        if let dateString = photo?.createdAt {
+            dateLabel.text = dateString
+        } else {
+            dateLabel.isHidden = true
+        }
+        
         let likeImage = UIImage(named: imageLiked ? "Like_on" : "Like_off")
         likeButton.setImage(
             likeImage,
+            for: .normal
+        )
+        
+        if self.fullPhotoURLString != fullPhotoURLString {
+            self.fullPhotoURLString = fullPhotoURLString
+        }
+    }
+    
+    func setIsLiked(_ isLiked: Bool) {
+        likeButton.setImage(
+            UIImage(
+                named: !isLiked ? "Like_on" : "Like_off"
+            ),
             for: .normal
         )
     }
@@ -112,17 +145,19 @@ extension ImagesListCell {
     }
 }
 
-// MARK: - Extensions + Private Helpers
+// MARK: - Extensions + Private ImagesListCell Helpers
 private extension ImagesListCell {
     func setupSelectionBackground() {
         let selectedBGView = UIView()
         selectedBGView.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.3)
         selectedBGView.layer.cornerRadius = 20
         self.selectedBackgroundView = selectedBGView
+        
+        selectedBackgroundView?.layer.addGradientLoadingAnimation()
     }
 }
 
-// MARK: - Extensions + Private Helpers
+// MARK: - Extensions + Private ImagesListCell Helpers
 private extension ImagesListCell {
     func configureCell() {
         backgroundColor = .clear
@@ -141,7 +176,7 @@ private extension ImagesListCell {
     }
 }
 
-// MARK: - Extensions + Private Setting Up Views
+// MARK: - Extensions + Private ImagesListCell Setting Up Views
 private extension ImagesListCell {
     func setUpViews() {
         configureCell()
@@ -161,12 +196,12 @@ private extension ImagesListCell {
     func setUpDateLabel() {
         dateLabel.textColor = .ypWhite
         dateLabel.attributedText = NSAttributedString(
-            string: "no date",
+            string: "",
             attributes: [
                 .foregroundColor: UIColor.ypWhite,
                 .font: UIFont.systemFont(
                     ofSize: 13,
-                    weight: .medium
+                    weight: .regular
                 )
             ]
         )
@@ -187,9 +222,11 @@ private extension ImagesListCell {
     }
     
     func setUpCellImage() {
-        cellImage.contentMode = .scaleAspectFill
+        cellImage.contentMode = .center
         cellImage.clipsToBounds = true
         cellImage.translatesAutoresizingMaskIntoConstraints = false
+        
+        cellImage.image = UIImage(systemName: "Mark-Stub")
 
         addSubview(cellImage)
         
@@ -225,8 +262,9 @@ private extension ImagesListCell {
             for: .normal
         )
         likeButton.translatesAutoresizingMaskIntoConstraints = false
+        likeButton.addTarget(self, action: #selector(likeButtonTapped), for: .touchUpInside)
         
-        cellImage.addSubview(likeButton)
+        addSubview(likeButton)
         
         NSLayoutConstraint.activate([
             likeButton.trailingAnchor.constraint(

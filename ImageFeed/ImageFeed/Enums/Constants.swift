@@ -8,16 +8,24 @@ enum Constants {
     static let defaultBaseURL = URL(string: "https://unsplash.com/")
     static let apiDefaultBaseURLString = "https://api.unsplash.com/"
     
+    static let photoLikeReplacementString = "ID"
+    
     enum Service {
         case profileImage
         case profile
+        case photos
+        case like
         
         var urlString: String {
             switch self {
             case .profileImage:
-                apiDefaultBaseURLString + "user/"
+                apiDefaultBaseURLString + "users/"
             case .profile:
                 apiDefaultBaseURLString + "me"
+            case .photos:
+                apiDefaultBaseURLString + "photos"
+            case .like:
+                apiDefaultBaseURLString + "photos/\(photoLikeReplacementString)/like"
             }
         }
     }

@@ -1,4 +1,6 @@
 import UIKit
+import WebKit
+import Kingfisher
 
 final class SplashViewController: UIViewController {
     
@@ -12,50 +14,82 @@ final class SplashViewController: UIViewController {
     private let secureStorage: SecureStorageProtocol = SecureStorage.shared
     private let profileService = ProfileService.shared
     private let profileImageService = ProfileImageService.shared
+    private let imagesListService = ImagesListService.shared
+    
+    // MARK: - Private Properties
+    private var alertPresenter: AlertPresenterProtocol?
+    
+    private lazy var observerObject: Observer? = {
+        try? .init(
+            self,
+            from: [
+                UserProfileViewController.self
+            ],
+            for: [
+                .logoutNotification
+            ]
+        )
+    }()
     
     // MARK: - View Life Cycles
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        alertPresenter = AlertPresenter()
+        addObserverObject()
+        setUpViews()
+    }
+    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        setUpViews()
-
+        
         if storage.isNotFirstLaunch {
-            if let token = handleSecureStorageTokenResult() {
-//                fetchUserProfile(by: token)
-                dismissAndGoToMain()
+            if let token = secureStorage.getToken() {
+                UIBlockingActivityIndicator.showActivityIndicator()
+                fetchUserProfile(by: token) { [weak self] username in
+                    self?.fetchUserProfilePhoto(by: token, username: username)
+                }
+                routeToMain()
             } else {
                 routeToAuthentication()
             }
         } else {
             storage.isNotFirstLaunch = true
-            handleSecureStorageTokenResult(remove: true)
             routeToAuthentication()
         }
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        
         setNeedsStatusBarAppearanceUpdate()
+    }
+    
+    deinit {
+        NotificationCenterManager.shared.removeObserver(observerObject)
     }
 }
 
-// MARK: - Extensions + Internal Appearance Control
+// MARK: - Extensions + Internal SplashViewController Appearance Control
 extension SplashViewController {
     override var preferredStatusBarStyle: UIStatusBarStyle {
         .lightContent
     }
 }
 
-// MARK: - Extensions + Internal AuthViewControllerDelegate Conformance
-extension SplashViewController: AuthViewControllerDelegate {
-    func didAuthenticate(_ vc: AuthViewController) {
-        UIBlockingActivityIndicator.showActivityIndicator()
-        guard let token = handleSecureStorageTokenResult() else {
-            logErrorToSTDIO(
-                errorDescription: "Failed to handle secure storage token result"
-            )
-            return
+// MARK: - Extensions + Internal SplashViewController NotificationObserver Conformance
+extension SplashViewController: NotificationObserver {
+    func handleNotification(_ notification: Notification) {
+        if notification.name == .logoutNotification {
+            logout()
         }
-        fetchUserProfile(by: token)
+    }
+}
+
+// MARK: - Extensions + Internal SplashViewController -> AuthViewControllerDelegate Conformance
+extension SplashViewController: AuthViewControllerDelegate {
+    func didAuthenticate(_ vc: AuthViewController, with token: String) {
+        secureStorage.setToken(token)
     }
     
     func didFailAuthentication(with error: any Error) {
@@ -66,20 +100,49 @@ extension SplashViewController: AuthViewControllerDelegate {
     }
 }
 
-// MARK: - Extensions + Private Helpers
+// MARK: - Extensions + Private SplashViewController Helpers
 private extension SplashViewController {
     
-    @discardableResult
-    func handleSecureStorageTokenResult(remove: Bool = false) -> String? {
-        if remove {
-            secureStorage.removeToken()
-            return nil
+    func addObserverObject() {
+        if let observerObject {
+            NotificationCenterManager.shared.addObserver(observerObject)
         } else {
-            return secureStorage.getToken()
+            logErrorToSTDIO(
+                errorDescription: "Failed to create observer object for notifications"
+            )
         }
     }
     
-    func fetchUserProfile(by token: String) {
+    func logout() {
+        HTTPCookieStorage.shared.removeCookies(since: Date.distantPast)
+        WKWebsiteDataStore.default().fetchDataRecords(
+            ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()
+        ) { records in
+            records.forEach {
+                WKWebsiteDataStore.default().removeData(
+                    ofTypes: $0.dataTypes,
+                    for: [$0],
+                    completionHandler: {}
+                )
+            }
+        }
+        
+        URLCache.shared.removeAllCachedResponses()
+        UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier ?? "")
+        UserDefaults.standard.synchronize()
+        ImageCache.default.clearMemoryCache()
+        secureStorage.removeToken()
+        
+        NotificationCenterManager.shared.removeAllObservers()
+        NotificationCenterManager.shared.clearNotifications()
+        
+        routeToAuthentication()
+    }
+    
+    func fetchUserProfile(
+        by token: String,
+        completion: ((String) -> Void)? = nil
+    ) {
         profileService.fetchProfile(
             httpMethod: .GET,
             token: token
@@ -87,44 +150,45 @@ private extension SplashViewController {
             guard let self else { return }
             switch result {
             case .success(let profile):
-                profileImageService.fetchProfileImageURL(
-                    username: profile.username,
-                    token: token
-                ) { result in
-                    switch result {
-                    case .success(_):
-                        // TODO: - handle succeeded request
-                        break
-                    case .failure(let error):
-                        logErrorToSTDIO(
-                            errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
-                        )
-                    }
-                }
+                completion?(profile.username)
             case .failure(let error):
                 logErrorToSTDIO(
                     errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
                 )
+                self.alertPresenter?.present(present: self.present)
+            }
+        }
+    }
+    
+    func fetchUserProfilePhoto(
+        by token: String,
+        username: String,
+        completion: (() -> Void)? = nil
+    ) {
+        profileImageService.fetchProfileImageURL(
+            username: username,
+            token: token
+        ) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(_):
+                completion?()
+            case .failure(let error):
+                logErrorToSTDIO(
+                    errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
+                )
+                self.alertPresenter?.present(present: self.present)
             }
         }
     }
 }
 
-// MARK: - Extensions + Private Routing
+// MARK: - Extensions + Private SplashViewController Routing
 private extension SplashViewController {
-    func dismissAndGoToMain() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            dismiss(animated: true) { [weak self] in
-                guard let self else { return }
-                UIBlockingActivityIndicator.dismissActivityIndicator()
-                routeToMain()
-            }
-        }
-    }
     func routeToAuthentication() {
         let authViewController = AuthViewController()
         authViewController.delegate = self
+        
         authViewController.modalPresentationStyle = .fullScreen
         present(
             authViewController,
@@ -134,11 +198,16 @@ private extension SplashViewController {
     
     func routeToMain() {
         let tabBarController = TabBarController()
-        route(to: tabBarController)
+        
+        tabBarController.modalPresentationStyle = .fullScreen
+        present(
+            tabBarController,
+            animated: false
+        )
     }
 }
 
-// MARK: - Extensions + Private Setting Up Views
+// MARK: - Extensions + Private SplashViewController Setting Up Views
 private extension SplashViewController {
     func setUpViews() {
         view.backgroundColor = .ypBlack

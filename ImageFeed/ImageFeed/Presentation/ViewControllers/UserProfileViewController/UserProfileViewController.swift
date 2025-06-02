@@ -2,7 +2,7 @@ import UIKit
 import Kingfisher
 
 final class UserProfileViewController: UIViewController {
-    
+
     // MARK: - Private Views
     private lazy var userProfileImage: UIImageView = {
         .init()
@@ -28,27 +28,105 @@ final class UserProfileViewController: UIViewController {
     
     // MARK: - Private Constants
     private let storage: StorageProtocol = Storage.shared
-    private let secureStorage: SecureStorageProtocol = SecureStorage.shared
     private let profileService = ProfileService.shared
     private let profileImageService = ProfileImageService.shared
     
-    private var profileImageServiceObserver: NSObjectProtocol?
+    // MARK: - Private Properties
+    private lazy var observerObject: Observer? = {
+        try? Observer(
+            self,
+            for: [
+                .profileImageServiceDidChangeNotification
+            ]
+        )
+    }()
+    
+    private var alertPresenter: AlertPresenterProtocol?
     
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        observeProfileImageURLNotification()
+        if let observerObject {
+            NotificationCenterManager.shared.addObserver(observerObject)
+        } else {
+            logErrorToSTDIO(
+                errorDescription: "Failed to create observer object for notifications"
+            )
+        }
+        
+        alertPresenter = AlertPresenter()
+        
         setUpViews()
         updateLabels()
+    }
+
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        if profileImageService.avatarURLString == nil {
+            userProfileImage.layer.addGradientLoadingAnimation(
+                cornerRadius: UserProfileViewConstraints.userProfileImage_LayerCornerRadiusConstant.rawValue
+            )
+        }
+        
+        if profileService.profile == nil {
+            userProfileImage.layer.scaleGradientAnimationSubLayer(scaleFactor: 1.2)
+            usernameLabel.layer.addGradientLoadingAnimation(cornerRadius: 5)
+            nicknameLabel.layer.addGradientLoadingAnimation(cornerRadius: 5)
+            aboutUserLabel.layer.addGradientLoadingAnimation(cornerRadius: 5)
+        }
+    }
+    
+    deinit {
+        NotificationCenterManager.shared.removeObserver(observerObject)
     }
 }
 
 // MARK: - Extensions + Private Buttons Actions
 private extension UserProfileViewController {
     @objc func logoutButtonTapped() {
-        popToRootViewController() { [weak self] in
-            self?.handleSecureStorageTokenDelete()
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            alertPresenter?.present(
+                present: present,
+                yesButtonAction: { [weak self] in
+                    NotificationCenter.default
+                        .post(
+                            name: .logoutNotification,
+                            object: self
+                        )
+                    self?.dismiss(animated: true)
+                }
+            )
+        }
+    }
+}
+
+// MARK: - Extensions + Internal NotificationObserver Conformance
+extension UserProfileViewController: NotificationObserver {
+    func handleNotification(_ notification: Notification) {
+        if notification.name == .profileImageServiceDidChangeNotification {
+            guard
+                let profileImageURLString = notification.userInfo?[UserInfoKey.profileImageURLString.rawValue] as? String
+            else {
+                logErrorToSTDIO(
+                    errorDescription: "No profileImageURLString found in notification"
+                )
+                return
+            }
+            
+            userProfileImage.layer.removeAllAnimations()
+            userProfileImage.layer.sublayers?.removeAll()
+            usernameLabel.layer.removeAllAnimations()
+            usernameLabel.layer.sublayers?.removeAll()
+            nicknameLabel.layer.removeAllAnimations()
+            nicknameLabel.layer.sublayers?.removeAll()
+            aboutUserLabel.layer.removeAllAnimations()
+            aboutUserLabel.layer.sublayers?.removeAll()
+            
+            updateProfileImage(using: profileImageURLString)
         }
     }
 }
@@ -57,7 +135,9 @@ private extension UserProfileViewController {
 private extension UserProfileViewController {
     
     func updateProfileImage(using profileImageURLString: String) {
-        guard let profileImageURL = URL(string: profileImageURLString) else {
+        guard
+            let profileImageURL = URL(string: profileImageURLString)
+        else {
             logErrorToSTDIO(
                 errorDescription: "Failed to create URL using user profile photo URL String -> \(profileImageURLString)"
             )
@@ -67,6 +147,7 @@ private extension UserProfileViewController {
         let processor = RoundCornerImageProcessor(cornerRadius: 20)
         
         userProfileImage.kf.indicatorType = .activity
+        
         userProfileImage.kf.setImage(
             with: profileImageURL,
             placeholder: UIImage(named: "Userpick-Stub"),
@@ -99,34 +180,6 @@ private extension UserProfileViewController {
         usernameLabel.text = profile.name
         nicknameLabel.text = profile.loginName
         aboutUserLabel.text = profile.bio
-    }
-}
-
-// MARK: - Extensions + Private Helpers
-private extension UserProfileViewController {
-    func handleSecureStorageTokenDelete() {
-        secureStorage.removeToken()
-    }
-    
-    func observeProfileImageURLNotification() {
-        profileImageServiceObserver = NotificationCenter.default
-            .addObserver(
-                forName: ProfileImageService.shared.profileImagedidChangeNotification,
-                object: nil,
-                queue: .main
-            ) { [weak self] notification in
-                guard let self else { return }
-                guard
-                    let profileImageURLString = notification.userInfo?[UserInfoKey.profileImageURLString.rawValue] as? String
-                else {
-                    logErrorToSTDIO(
-                        errorDescription: "No profileImageURLString found in notification"
-                    )
-                    return
-                }
-
-                updateProfileImage(using: profileImageURLString)
-            }
     }
 }
 

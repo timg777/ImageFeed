@@ -1,5 +1,6 @@
 import Foundation
 
+// MARK: - Extensions + Internal URLSession Custom Tasks
 extension URLSession {
     
     enum HTTPMethod: String {
@@ -70,8 +71,11 @@ extension URLSession {
             handler: handler
         )
     }
-    
-    private func decode<T: Decodable>(
+}
+
+// MARK: - Extensions + Fileprivate URLSession Helpers
+fileprivate extension URLSession {
+    func decode<T: Decodable>(
         data: Data
     ) -> T? {
         let decoder = JSONDecoder()
@@ -82,7 +86,7 @@ extension URLSession {
         )
     }
     
-    private func createURL(
+    func createURL(
         base urlString: String,
         with parameters: [String: String]
     ) -> URL? {

@@ -1,13 +1,31 @@
 import UIKit
 
 final class TabBarController: UITabBarController {
-    
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
         
-//        let imageListViewController = UIViewController()
-//        imageListViewController.view.backgroundColor = .ypBlack
+        setupAppearance()
+        configureViewControllers()
+    }
+    
+    // MARK: - Internal View Appearance Configuration
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        return .darkContent
+    }
+}
+
+// MARK: - Extensions + Private TabBarController Helpers
+private extension TabBarController {
+    func setupAppearance() {
+        let tabBarAppearance = UITabBarAppearance ()
+        tabBarAppearance.configureWithOpaqueBackground ()
+        tabBarAppearance.backgroundColor = .ypBlack
+        tabBarAppearance.stackedLayoutAppearance.selected.iconColor = .ypWhite
+        tabBar.standardAppearance = tabBarAppearance
+    }
+    
+    func configureViewControllers() {
         let imageListViewController = ImageListViewController()
         imageListViewController.tabBarItem =
         UITabBarItem(
@@ -25,12 +43,6 @@ final class TabBarController: UITabBarController {
         )
         
         self.viewControllers = [imageListViewController, userProfileViewController]
-        
-        tabBar.barStyle = .black
-    }
-    
-    // MARK: - Internal View Appearance Configuration
-    override var preferredStatusBarStyle: UIStatusBarStyle {
-        return .darkContent
     }
 }
+

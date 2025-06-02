@@ -1,6 +1,6 @@
 import UIKit
 
-final class ProfileImageService: ProfileImageProvider {
+final class ProfileImageService: ProfileImageProtocol, AnyObject {
     
     enum ImageSizeStrategy: String {
         case small
@@ -11,9 +11,16 @@ final class ProfileImageService: ProfileImageProvider {
     static let shared = ProfileImageService()
     private init() {}
     
-    let profileImagedidChangeNotification = Notification.Name(rawValue: GlobalNamespace.NorificationName.profileImageProviderDidChange.rawValue)
-    
-    private(set) var avatarURLString: String?
+    private(set) var avatarURLString: String? {
+        didSet {
+            NotificationCenter.default
+                .post(
+                    name: .profileImageServiceDidChangeNotification,
+                    object: self,
+                    userInfo: [UserInfoKey.profileImageURLString.rawValue: avatarURLString ?? "EMPTY"]
+                )
+        }
+    }
     private(set) var task: URLSessionTask?
     
     func fetchProfileImageURL(
@@ -37,6 +44,7 @@ final class ProfileImageService: ProfileImageProvider {
                 headerFields: headers
             ) { [weak self] (result: Result<UserResult, Error>) in
                 guard let self else { return }
+
                 switch result {
                 case .success(let userResult):
                     guard
@@ -45,14 +53,9 @@ final class ProfileImageService: ProfileImageProvider {
                         handler(.failure(ParseError.decodeError(T: UserResult.self)))
                         return
                     }
+                    
                     self.avatarURLString = avatarURLString
                     handler(.success(avatarURLString))
-                    NotificationCenter.default
-                        .post(
-                            name: ProfileImageService.shared.profileImagedidChangeNotification,
-                            object: self,
-                            userInfo: [UserInfoKey.profileImageURLString.rawValue: avatarURLString]
-                        )
                     
                     task?.cancel()
                     task = nil

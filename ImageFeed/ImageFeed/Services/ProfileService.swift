@@ -1,6 +1,6 @@
 import UIKit
 
-final class ProfileService {
+final class ProfileService: ProfileServiceProtocol {
     
     static let shared = ProfileService()
     private init() {}
@@ -10,6 +10,8 @@ final class ProfileService {
         case publicRequest
     }
     
+    private(set) var task: URLSessionTask?
+    
     private(set) var profile: Profile?
     
     func fetchProfile(
@@ -17,16 +19,22 @@ final class ProfileService {
         token: String,
         handler: @escaping (Result<Profile, Error>) -> Void
     ) {
+        
+        if let _ = task {
+            handler(.failure(NetworkError.repeatedRequest))
+            return
+        }
 
         let urlString = Constants.Service.profile.urlString
         let headers: [String:String] = ["Authorization": "Bearer \(token)"]
         
         do {
-            let task = try URLSession.shared.objectTask(
+            task = try URLSession.shared.objectTask(
                 urlString: urlString,
                 headerFields: headers
             ) { [weak self] (result: Result<ProfileResult, Error>) in
-                guard let _ = self else { return }
+                guard let self else { return }
+                
                 switch result {
                 case .success(let value):
                     let profile = Profile(
@@ -35,17 +43,23 @@ final class ProfileService {
                         loginName: "@\(value.username ?? "No data")",
                         bio: value.bio ?? "No Data"
                     )
-                    self?.profile = profile
+                    self.profile = profile
                     handler(.success(profile))
                     
+                    task?.cancel()
+                    task = nil
                 case .failure(let error):
                     handler(.failure(error))
+                    task?.cancel()
+                    task = nil
                 }
             }
             
-            task.resume()
+            task?.resume()
         } catch {
             handler(.failure(error))
+            task?.cancel()
+            task = nil
         }
     }
 }

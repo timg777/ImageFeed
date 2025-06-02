@@ -2,14 +2,10 @@ import UIKit
 
 final class AuthViewController: UIViewController {
     
-    // MARK: - Private Constants
-    private let storage: StorageProtocol = Storage.shared
-    private let secureStorage: SecureStorageProtocol = SecureStorage.shared
-    
     // MARK: - Private Properties
     private var alertPresenter: AlertPresenterProtocol?
     
-    // MARK: - IB Outlets
+    // MARK: - Private Views
     private lazy var loginButton: UIButton = {
         .init()
     }()
@@ -29,32 +25,30 @@ final class AuthViewController: UIViewController {
     }
 }
 
-// MARK: - Extensions + Internal WebViewViewControllerDelegate Conformance
+// MARK: - Extensions + Internal AuthViewController -> WebViewViewControllerDelegate Conformance
 extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
-        
         UIBlockingActivityIndicator.showActivityIndicator()
-        
         OAuth2Service.shared.fetchOAuthToken(code: code) { [weak self] result in
-            UIBlockingActivityIndicator.dismissActivityIndicator()
             guard let self else { return }
             switch result {
             case .success(let token):
-                handleSecureStorageTokenUpdate(token)
-                delegate?.didAuthenticate(self)
+                delegate?.didAuthenticate(self, with: token)
+                dismiss(animated: true)
             case .failure(let error):
                 delegate?.didFailAuthentication(with: error)
                 showAlert()
             }
+            UIBlockingActivityIndicator.dismissActivityIndicator()
         }
     }
     
     func webViewViewControllerDidCancel(_ vc: WebViewViewController) {
-        vc.dismiss(animated: true)
+        dismiss(animated: true)
     }
 }
 
-// MARK: - Extensions + Private Button Handlers
+// MARK: - Extensions + Private AuthViewController Button Handlers
 private extension AuthViewController {
     @objc func didTapLoginButton() {
         let webViewViewController = WebViewViewController()
@@ -67,22 +61,18 @@ private extension AuthViewController {
     }
 }
 
-// MARK: - Extensions + Private Helpers
+// MARK: - Extensions + Private AuthViewController Helpers
 private extension AuthViewController {
     func showAlert() {
         alertPresenter?.present(
-            kind: .authError,
             present: present,
-            nil
-        )
-    }
-    
-    func handleSecureStorageTokenUpdate(_ token: String) {
-        secureStorage.setToken(token)
+            action: { [weak self] in
+            self?.alertPresenter = nil
+        })
     }
 }
 
-// MARK: - Extensions + Private Setting Up View
+// MARK: - Extensions + Private AuthViewController Setting Up View
 private extension AuthViewController {
     func setUpViews() {
         view.backgroundColor = .ypBlack

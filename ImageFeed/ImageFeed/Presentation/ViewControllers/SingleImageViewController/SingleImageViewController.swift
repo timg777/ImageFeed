@@ -20,53 +20,31 @@ final class SingleImageViewController: UIViewController {
         .init()
     }()
     
+    // MARK: - Private Properties
+    private var alertPresenter: AlertPresenterProtocol?
+    
     // MARK: - Inernal Properties
     var imageSize: CGSize?
-    var imageURLString: String? {
-        didSet {
-            guard let imageURLString, isViewLoaded else { return }
-            guard
-                let imageURL = URL(string: imageURLString)
-            else {
-                logErrorToSTDIO(
-                    errorDescription: "Failed to create URL from string: \(imageURLString)"
-                )
-                return
-            }
-            imageView.kf.setImage(
-                with: imageURL,
-                placeholder: UIImage(named: "Mark-Stub")
-            ) { [weak self] result in
-                guard let self else { return }
-                switch result {
-                case .success(let imageData):
-                    imageView.image = imageData.image
-                case .failure(let error):
-                    logErrorToSTDIO(
-                        errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
-                    )
-                }
-            }
-        }
-    }
+    var imageURLString: String?
     
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        trySetImage()
         scrollView.delegate = self
         setUpViews()
     }
-
-    override func viewIsAppearing(_ animated: Bool) {
-        super.viewIsAppearing(animated)
-
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
         guard let image = imageView.image else { return }
         rescaleAndCenterImageInScrollView(image: image)
     }
 }
 
-// MARK: - Extensions + Conforming to UIScrollViewDelegate
+// MARK: - Extensions + Internal SingleImageViewController -> UIScrollViewDelegate Conformance
 extension SingleImageViewController: UIScrollViewDelegate {
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         imageView
@@ -77,11 +55,8 @@ extension SingleImageViewController: UIScrollViewDelegate {
     }
 }
 
-// MARK: - Extensions + Private IBActions
+// MARK: - Extensions + Private SingleImageViewController IBActions
 private extension SingleImageViewController {
-    @objc func didTapLikeButton() {
-        #warning("TODO: handle liking an image")
-    }
     @objc func didTapShareButton() {
         guard let image = imageView.image else {
             logErrorToSTDIO(
@@ -100,12 +75,61 @@ private extension SingleImageViewController {
     }
     @objc func didTapBackButton() {
         imageView.kf.cancelDownloadTask()
-        popViewController()
+        dismiss(animated: true)
     }
 }
 
-// MARK: - Extensions + Private Helpers
+// MARK: - Extensions + Private SingleImageViewController UI Updates
 private extension SingleImageViewController {
+    func showError() {
+        alertPresenter?.present(
+            primaryAction: { [weak self] in
+                self?.dismiss(animated: true)
+            },
+            retryAction: { [weak self] in
+                self?.trySetImage()
+            },
+            present: present
+        )
+    }
+}
+
+// MARK: - Extensions + Private SingleImageViewController Helpers
+private extension SingleImageViewController {
+    func trySetImage() {
+        guard
+            isViewLoaded,
+            let imageURLString
+        else { return }
+        
+        guard
+            let imageURL = URL(string: imageURLString)
+        else {
+            logErrorToSTDIO(
+                errorDescription: "Failed to create URL from string: \(imageURLString)"
+            )
+            return
+        }
+        
+        UIBlockingActivityIndicator.showActivityIndicator()
+        imageView.kf.setImage(
+            with: imageURL,
+            placeholder: UIImage(named: "Mark-Stub")
+        ) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success:
+                imageView.contentMode = .scaleAspectFit
+            case .failure(let error):
+                logErrorToSTDIO(
+                    errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
+                )
+                showError()
+            }
+            UIBlockingActivityIndicator.dismissActivityIndicator()
+        }
+    }
+    
     func rescaleAndCenterImageInScrollView(image: UIImage) {
         let minZoomScale = scrollView.minimumZoomScale
         let maxZoomScale = scrollView.maximumZoomScale
@@ -172,7 +196,7 @@ private extension SingleImageViewController {
     }
 }
 
-// MARK: - Extensions + Private Setting Up Views
+// MARK: - Extensions + Private SingleImageViewController Setting Up Views
 private extension SingleImageViewController {
     func setUpViews() {
         setUpScrollView()
@@ -184,7 +208,7 @@ private extension SingleImageViewController {
     func setUpImage() {
         guard let imageSize else { return }
         imageView.frame.size = imageSize
-        imageView.contentMode = .scaleAspectFit
+        imageView.contentMode = .center
         imageView.isUserInteractionEnabled = false
         imageView.translatesAutoresizingMaskIntoConstraints = false
         

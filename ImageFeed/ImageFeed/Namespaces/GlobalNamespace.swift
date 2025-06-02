@@ -27,9 +27,9 @@ struct GlobalNamespace {
     )
     static let tableViewEdgeInsets =
     UIEdgeInsets(
-        top: 5,
+        top: 0,
         left: 16,
-        bottom: 5,
+        bottom: 10,
         right: 16
     )
     
@@ -41,15 +41,4 @@ struct GlobalNamespace {
     static let likeButtonShadowOpacity: Float = 0.5
     static let likeButtonShadowOffset: CGSize = .zero
     static let likeButtonShadowColor: CGColor = UIColor.black.cgColor
-    
-    // MARK: - Routing
-    enum Routing: String {
-        case tabBarControllerIdentifier = "TabBarControllerIdentifier"
-    }
-    
-    // MARK: - notification identifiers
-    enum NorificationName: String {
-        case profileImageProviderDidChange
-        case imagesListServiceDidChangeNotification
-    }
 }
