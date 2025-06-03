@@ -47,6 +47,7 @@ final class ImageListViewController: UIViewController {
         
         UIBlockingActivityIndicator.showActivityIndicator()
         imagesListService.fetchPhotosNextPage { [weak self] result in
+            UIBlockingActivityIndicator.dismissActivityIndicator()
             guard let self else { return }
             switch result {
             case .success:
@@ -54,7 +55,6 @@ final class ImageListViewController: UIViewController {
             case .failure:
                 alertPresenter?.present(present: present)
             }
-            UIBlockingActivityIndicator.dismissActivityIndicator()
         }
         
         tableView.rowHeight = UITableView.automaticDimension
@@ -94,6 +94,7 @@ extension ImageListViewController: ImagesListCellDelegate {
             token: token,
             photoIndex: indexPath.row
         ) { [weak self] result in
+            UIBlockingActivityIndicator.dismissActivityIndicator()
             guard let self else { return }
             switch result {
             case .success:
@@ -102,7 +103,6 @@ extension ImageListViewController: ImagesListCellDelegate {
             case .failure:
                 alertPresenter?.present(present: present)
             }
-            UIBlockingActivityIndicator.dismissActivityIndicator()
         }
     }
 }

@@ -114,7 +114,7 @@ private extension SingleImageViewController {
         UIBlockingActivityIndicator.showActivityIndicator()
         imageView.kf.setImage(
             with: imageURL,
-            placeholder: UIImage(named: "Mark-Stub")
+            placeholder: UIImage(resource: .markStub)
         ) { [weak self] result in
             guard let self else { return }
             switch result {
@@ -242,7 +242,7 @@ private extension SingleImageViewController {
             for: .normal
         )
         shareButton.setImage(
-            UIImage(named: "Sharing"),
+            UIImage(resource: .sharing),
             for: .normal
         )
         shareButton.backgroundColor = .ypBlack

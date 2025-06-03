@@ -215,7 +215,7 @@ private extension SplashViewController {
     }
     
     func setUpLaunchImage() {
-        launchImage.image = UIImage(named: "LaunchScreenVector")
+        launchImage.image = UIImage(resource: .launchScreenVector)
         launchImage.layer.cornerRadius = UserProfileViewConstraints.userProfileImage_LayerCornerRadiusConstant.rawValue
         launchImage.translatesAutoresizingMaskIntoConstraints = false
         

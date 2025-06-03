@@ -11,7 +11,7 @@ final class TabBarController: UITabBarController {
     
     // MARK: - Internal View Appearance Configuration
     override var preferredStatusBarStyle: UIStatusBarStyle {
-        return .darkContent
+        .darkContent
     }
 }
 
@@ -30,7 +30,7 @@ private extension TabBarController {
         imageListViewController.tabBarItem =
         UITabBarItem(
             title: "",
-            image: UIImage(named: "Stack-Active"),
+            image: UIImage(resource: .stackActive),
             selectedImage: nil
         )
         
@@ -38,7 +38,7 @@ private extension TabBarController {
         userProfileViewController.tabBarItem =
         UITabBarItem(
             title: "",
-            image: UIImage(named: "Profile-NoActive"),
+            image: UIImage(resource: .stackNoActive),
             selectedImage: nil
         )
         

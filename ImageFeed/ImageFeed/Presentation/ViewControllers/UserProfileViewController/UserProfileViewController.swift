@@ -87,10 +87,9 @@ final class UserProfileViewController: UIViewController {
 // MARK: - Extensions + Private Buttons Actions
 private extension UserProfileViewController {
     @objc func logoutButtonTapped() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            alertPresenter?.present(
-                present: present,
+        DispatchQueue.main.async {
+            self.alertPresenter?.present(
+                present: self.present,
                 yesButtonAction: { [weak self] in
                     NotificationCenter.default
                         .post(
@@ -150,7 +149,7 @@ private extension UserProfileViewController {
         
         userProfileImage.kf.setImage(
             with: profileImageURL,
-            placeholder: UIImage(named: "Userpick-Stub"),
+            placeholder: UIImage(resource: .userpickStub),
             options: [
                 .processor(processor)
             ]) { [weak self] result in
@@ -204,7 +203,7 @@ private extension UserProfileViewController {
     }
     
     func setUpUserProfileImage() {
-        userProfileImage.image = UIImage(named: "Userpick-Stub")
+        userProfileImage.image = UIImage(resource: .userpickStub)
         userProfileImage.layer.cornerRadius = UserProfileViewConstraints.userProfileImage_LayerCornerRadiusConstant.rawValue
         userProfileImage.translatesAutoresizingMaskIntoConstraints = false
         
@@ -284,7 +283,7 @@ private extension UserProfileViewController {
     
     func setUpLogoutButton() {
         logoutButton.setImage(
-            UIImage(named: "Exit"),
+            UIImage(resource: .exit),
             for: .normal
         )
         logoutButton.imageView?.contentMode = .scaleAspectFit
@@ -330,7 +329,7 @@ private extension UserProfileViewController {
     }
     
     func setUpEmptyFavoritesImageView() {
-        emptyFavotiesImageView.image = UIImage(named: "No Photo")
+        emptyFavotiesImageView.image = UIImage(resource: .noPhoto)
         emptyFavotiesImageView.translatesAutoresizingMaskIntoConstraints = false
         
         view.addSubview(emptyFavotiesImageView)

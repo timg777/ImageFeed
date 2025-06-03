@@ -57,7 +57,7 @@ final class ImagesListCell: UITableViewCell {
             case .success:
                 cellImage.contentMode = .scaleAspectFill
             case .failure:
-                cellImage.image = UIImage(named: "Mark-Stub")
+                cellImage.image = UIImage(resource: .markStub)
             }
             cellImage.layer.removeGradientAnimationSublayers()
         }
@@ -110,7 +110,7 @@ extension ImagesListCell {
             dateLabel.isHidden = true
         }
         
-        let likeImage = UIImage(named: imageLiked ? "Like_on" : "Like_off")
+        let likeImage = UIImage(resource: imageLiked ? .likeOn : .likeOff)
         likeButton.setImage(
             likeImage,
             for: .normal
@@ -124,7 +124,7 @@ extension ImagesListCell {
     func setIsLiked(_ isLiked: Bool) {
         likeButton.setImage(
             UIImage(
-                named: !isLiked ? "Like_on" : "Like_off"
+                resource: !isLiked ? .likeOn : .likeOff
             ),
             for: .normal
         )
@@ -226,7 +226,7 @@ private extension ImagesListCell {
         cellImage.clipsToBounds = true
         cellImage.translatesAutoresizingMaskIntoConstraints = false
         
-        cellImage.image = UIImage(systemName: "Mark-Stub")
+        cellImage.image = UIImage(resource: .markStub)
 
         addSubview(cellImage)
         

@@ -125,7 +125,7 @@ private extension AuthViewController {
     }
     
     func setUpLogoImage() {
-        logoImageView.image = UIImage(named: "Logo_of_Unsplash")
+        logoImageView.image = UIImage(resource: .logoOfUnsplash)
         logoImageView.translatesAutoresizingMaskIntoConstraints = false
         
         view.addSubview(logoImageView)
