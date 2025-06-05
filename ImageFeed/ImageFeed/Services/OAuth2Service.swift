@@ -30,7 +30,7 @@ extension OAuth2Service {
             return
         }
         
-        let task = URLSession.shared.objectTask(for: request) { [weak self] (result: Result<OAuthTokenResponseBody, Error>) in
+        let task = URLSession.shared.objectTask(for: request) { [weak self] (result: Result<OAuth2TokenResponseBody, Error>) in
             guard let self else { return }
             switch result {
             case .success(let oAuthTokenResponse):

@@ -8,21 +8,106 @@ final class ImageListViewController: UIViewController {
     }()
     
     // MARK: - Private Contants
-    private var photosNames: [String] = (0..<20).map { "\($0)" }
+    private let imagesListService: ImagesListServiceProtocol = ImagesListService.shared
+    
+    private lazy var observerObject: Observer? = {
+        try? Observer(
+            self,
+            from: [
+                ImagesListService.self
+            ],
+            for: [
+                .imagesListServicePhotosDidChangeNotification
+            ]
+        )
+    }()
+    
+    // MARK: - Private Properties
+    private var photos = [Photo]()
+    private var alertPresenter: AlertPresenterProtocol?
+    
+    // MARK: - Internal Properties
+    var token: String? {
+        SecureStorage.shared.getToken()
+    }
     
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
+
+        if let observerObject {
+            NotificationCenterManager.shared.addObserver(observerObject)
+        } else {
+            logErrorToSTDIO(
+                errorDescription: "Failed to create observer object for notifications"
+            )
+        }
         
+        alertPresenter = AlertPresenter()
+        
+        UIBlockingActivityIndicator.showActivityIndicator()
+        imagesListService.fetchPhotosNextPage { [weak self] result in
+            UIBlockingActivityIndicator.dismissActivityIndicator()
+            guard let self else { return }
+            switch result {
+            case .success:
+                break
+            case .failure:
+                alertPresenter?.present(present: present)
+            }
+        }
+        
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 200
+        
+        setUpViews()
         tableView.register(
             ImagesListCell.self,
             forCellReuseIdentifier: ImagesListCell.reuseIdentifier
         )
-        setUpViews()
+    }
+    
+    deinit {
+        NotificationCenterManager.shared.removeObserver(observerObject)
     }
 }
 
-// MARK: - Extensions + Private Routing
+// MARK: - Extensions + Internal ImageListViewController -> NotificationObserver Conformance
+extension ImageListViewController: NotificationObserver {
+    func handleNotification(_ notification: Notification) {
+        if notification.name == .imagesListServicePhotosDidChangeNotification {
+            updateTableViewAnimated()
+        }
+    }
+}
+
+// MARK: - Extensions + Internal ImageListViewController -> ImageListCellDelegate Conformance
+extension ImageListViewController: ImagesListCellDelegate {
+    func didTapLike(_ cell: ImagesListCell) {
+        guard
+            let indexPath = tableView.indexPath(for: cell),
+            let token = token
+        else { return }
+        
+        UIBlockingActivityIndicator.showActivityIndicator()
+        imagesListService.changeLike(
+            token: token,
+            photoIndex: indexPath.row
+        ) { [weak self] result in
+            UIBlockingActivityIndicator.dismissActivityIndicator()
+            guard let self else { return }
+            switch result {
+            case .success:
+                photos = imagesListService.photos
+                cell.setIsLiked(photos[indexPath.row].isLiked)
+            case .failure:
+                alertPresenter?.present(present: present)
+            }
+        }
+    }
+}
+
+// MARK: - Extensions + Private ImageListViewController Routing
 private extension ImageListViewController {
     func routeToSingleImage(with indexPath: IndexPath) {
         tableView.deselectRow(
@@ -30,20 +115,25 @@ private extension ImageListViewController {
             animated: true
         )
         let singleImageViewController = SingleImageViewController()
-        singleImageViewController.image = UIImage(named: photosNames[safe: indexPath.row] ?? "")
-        navigationController?.pushViewController(
+        let photo = imagesListService.photos[safe: indexPath.row]
+        singleImageViewController.imageURLString = photo?.largeImageURLString
+        singleImageViewController.imageSize = photo?.size
+        
+        singleImageViewController.modalPresentationStyle = .fullScreen
+        present(
             singleImageViewController,
             animated: true
         )
     }
 }
 
-// MARK: - Extensions + Internal UITableViewDelegate Conformance
+// MARK: - Extensions + Internal ImageListViewController -> UITableViewDelegate Conformance
 extension ImageListViewController: UITableViewDelegate {
     func tableView(
         _ tableView: UITableView,
         didSelectRowAt indexPath: IndexPath
     ) {
+        tableView.deselectRow(at: indexPath, animated: true)
         routeToSingleImage(with: indexPath)
     }
 
@@ -51,26 +141,44 @@ extension ImageListViewController: UITableViewDelegate {
         _ tableView: UITableView,
         heightForRowAt indexPath: IndexPath
     ) -> CGFloat {
-        guard let image = UIImage(named: photosNames[safe: indexPath.row] ?? "") else {
-            return 0
-        }
+        let imageSize = imagesListService.photos[safe: indexPath.row]?.size ?? .zero
         
         let imageInsets = GlobalNamespace.imageInsets
         let imageViewWidth = tableView.bounds.width - imageInsets.left - imageInsets.right
-        let imageWidth = image.size.width
+        let imageWidth = imageSize.width
         let scale = imageViewWidth / (imageWidth == 0 ? 1 : imageWidth)
-        let cellHeight = image.size.height * scale + imageInsets.top + imageInsets.bottom
+        let cellHeight = imageSize.height * scale + imageInsets.top + imageInsets.bottom
         return cellHeight
+    }
+    
+    func tableView(
+        _ tableView: UITableView,
+        willDisplay cell: UITableViewCell,
+        forRowAt indexPath: IndexPath
+    ) {
+        if indexPath.row == photos.count - 1 {
+            UIBlockingActivityIndicator.showActivityIndicator()
+            imagesListService.fetchPhotosNextPage { [weak self] result in
+                guard let self else { return }
+                switch result {
+                case .success:
+                    break
+                case .failure:
+                    alertPresenter?.present(present: present)
+                }
+                UIBlockingActivityIndicator.dismissActivityIndicator()
+            }
+        }
     }
 }
 
-// MARK: - Extensions + Intrnal UITableViewDataSource Conformance
+// MARK: - Extensions + Intrnal ImageListViewController -> UITableViewDataSource Conformance
 extension ImageListViewController: UITableViewDataSource {
     func tableView(
         _ tableView: UITableView,
         numberOfRowsInSection section: Int
     ) -> Int {
-        photosNames.count
+        photos.count
     }
     
     func tableView(
@@ -92,14 +200,41 @@ extension ImageListViewController: UITableViewDataSource {
             return UITableViewCell()
         }
 
-        
-        let photoName = photosNames[safe: indexPath.row] ?? ""
-        cell.configureListCell(with: photoName)
+        let photo = photos[safe: indexPath.row]
+        cell.configureListCell(photo: photo)
+        cell.delegate = self
         return cell
     }
 }
 
-// MARK: - Extensions + Private Setting Up Views
+// MARK: - Extensions + Private ImageListViewController View Updates
+private extension ImageListViewController {
+
+    func updateTableViewAnimated() {
+        let oldPhotoCount = photos.count
+        let newPhotoCount = imagesListService.photos.count
+        photos = imagesListService.photos
+
+        tableView.beginUpdates()
+        
+        if oldPhotoCount < newPhotoCount {
+            let indexPaths = (oldPhotoCount..<newPhotoCount).map { i in
+                IndexPath(row: i, section: 0)
+            }
+            tableView.insertRows(at: indexPaths, with: .automatic)
+        } else if oldPhotoCount > newPhotoCount {
+            let indexPaths = (newPhotoCount..<oldPhotoCount).map { i in
+                IndexPath(row: i, section: 0)
+            }
+            tableView.deleteRows(at: indexPaths, with: .automatic)
+        }
+        
+        tableView.endUpdates()
+    }
+
+}
+
+// MARK: - Extensions + Private ImageListViewController Setting Up Views
 private extension ImageListViewController {
     func setUpViews() {
         tableView.dataSource = self

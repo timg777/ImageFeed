@@ -1,3 +1,4 @@
+// MARK: - Error Logger
 func logErrorToSTDIO(
     fileID: String = #fileID,
     function: String = #function,
@@ -5,7 +6,6 @@ func logErrorToSTDIO(
     errorDescription: String
 ) {
     print(
-        "(\(fileID)) [\(function)] in line \(line): \(errorDescription)"
+        "\n🔴🔴🔴 (\(fileID)) [\(function)] in line \(line): \(errorDescription) 🔴🔴🔴\n"
     )
-    #warning("print here")
 }

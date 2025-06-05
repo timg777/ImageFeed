@@ -40,7 +40,7 @@ final class WebViewViewController: UIViewController {
     }
 }
 
-// MARK: - Extensions + Private UI Updates
+// MARK: - Extensions + Private WebViewViewController UI Updates
 private extension WebViewViewController {
     func loadAuthView() {
         guard let request = oauth2Service.getUserAuthRequest() else {
@@ -68,7 +68,7 @@ private extension WebViewViewController {
     }
 }
 
-// MARK: - Extensions + Internal WKNavigationDelegate Conformace
+// MARK: - Extensions + Internal WebViewViewController -> WKNavigationDelegate Conformace
 extension WebViewViewController: WKNavigationDelegate {
     func webView(
         _ webView: WKWebView,

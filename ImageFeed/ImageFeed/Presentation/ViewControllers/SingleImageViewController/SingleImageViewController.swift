@@ -1,4 +1,5 @@
 import UIKit
+import Kingfisher
 
 final class SingleImageViewController: UIViewController {
     
@@ -19,33 +20,31 @@ final class SingleImageViewController: UIViewController {
         .init()
     }()
     
+    // MARK: - Private Properties
+    private var alertPresenter: AlertPresenterProtocol?
+    
     // MARK: - Inernal Properties
-    var image: UIImage? {
-        didSet {
-            guard let image, isViewLoaded else { return }
-            imageView.image = image
-            imageView.frame.size = image.size
-            rescaleAndCenterImageInScrollView(image: image)
-        }
-    }
-
+    var imageSize: CGSize?
+    var imageURLString: String?
+    
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        trySetImage()
         scrollView.delegate = self
         setUpViews()
     }
-
-    override func viewIsAppearing(_ animated: Bool) {
-        super.viewIsAppearing(animated)
-
-        guard let image else { return }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        guard let image = imageView.image else { return }
         rescaleAndCenterImageInScrollView(image: image)
     }
 }
 
-// MARK: - Extensions + Conforming to UIScrollViewDelegate
+// MARK: - Extensions + Internal SingleImageViewController -> UIScrollViewDelegate Conformance
 extension SingleImageViewController: UIScrollViewDelegate {
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         imageView
@@ -56,13 +55,10 @@ extension SingleImageViewController: UIScrollViewDelegate {
     }
 }
 
-// MARK: - Extensions + Private IBActions
+// MARK: - Extensions + Private SingleImageViewController IBActions
 private extension SingleImageViewController {
-    @objc func didTapLikeButton() {
-        #warning("TODO: handle liking an image")
-    }
     @objc func didTapShareButton() {
-        guard let image else {
+        guard let image = imageView.image else {
             logErrorToSTDIO(
                 errorDescription: "Failed to share image because no image was set"
             )
@@ -72,15 +68,68 @@ private extension SingleImageViewController {
             activityItems: [image],
             applicationActivities: nil
         )
-        present(activityController, animated: true, completion: nil)
+        present(
+            activityController,
+            animated: true
+        )
     }
     @objc func didTapBackButton() {
-        popViewController()
+        imageView.kf.cancelDownloadTask()
+        dismiss(animated: true)
     }
 }
 
-// MARK: - Extensions + Private Helpers
+// MARK: - Extensions + Private SingleImageViewController UI Updates
 private extension SingleImageViewController {
+    func showError() {
+        alertPresenter?.present(
+            primaryAction: { [weak self] in
+                self?.dismiss(animated: true)
+            },
+            retryAction: { [weak self] in
+                self?.trySetImage()
+            },
+            present: present
+        )
+    }
+}
+
+// MARK: - Extensions + Private SingleImageViewController Helpers
+private extension SingleImageViewController {
+    func trySetImage() {
+        guard
+            isViewLoaded,
+            let imageURLString
+        else { return }
+        
+        guard
+            let imageURL = URL(string: imageURLString)
+        else {
+            logErrorToSTDIO(
+                errorDescription: "Failed to create URL from string: \(imageURLString)"
+            )
+            return
+        }
+        
+        UIBlockingActivityIndicator.showActivityIndicator()
+        imageView.kf.setImage(
+            with: imageURL,
+            placeholder: UIImage(resource: .markStub)
+        ) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success:
+                imageView.contentMode = .scaleAspectFit
+            case .failure(let error):
+                logErrorToSTDIO(
+                    errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
+                )
+                showError()
+            }
+            UIBlockingActivityIndicator.dismissActivityIndicator()
+        }
+    }
+    
     func rescaleAndCenterImageInScrollView(image: UIImage) {
         let minZoomScale = scrollView.minimumZoomScale
         let maxZoomScale = scrollView.maximumZoomScale
@@ -147,7 +196,7 @@ private extension SingleImageViewController {
     }
 }
 
-// MARK: - Extensions + Private Setting Up Views
+// MARK: - Extensions + Private SingleImageViewController Setting Up Views
 private extension SingleImageViewController {
     func setUpViews() {
         setUpScrollView()
@@ -157,10 +206,9 @@ private extension SingleImageViewController {
     }
     
     func setUpImage() {
-        guard let image else { return }
-        imageView.image = image
-        imageView.frame.size = image.size
-        imageView.contentMode = .scaleAspectFit
+        guard let imageSize else { return }
+        imageView.frame.size = imageSize
+        imageView.contentMode = .center
         imageView.isUserInteractionEnabled = false
         imageView.translatesAutoresizingMaskIntoConstraints = false
         
@@ -180,10 +228,10 @@ private extension SingleImageViewController {
                 equalTo: scrollView.contentLayoutGuide.bottomAnchor
             ),
             imageView.widthAnchor.constraint(
-                equalToConstant: image.size.width
+                equalToConstant: imageSize.width
             ),
             imageView.heightAnchor.constraint(
-                equalToConstant: image.size.height
+                equalToConstant: imageSize.height
             )
         ])
     }
@@ -194,7 +242,7 @@ private extension SingleImageViewController {
             for: .normal
         )
         shareButton.setImage(
-            UIImage(named: "Sharing"),
+            UIImage(resource: .sharing),
             for: .normal
         )
         shareButton.backgroundColor = .ypBlack
@@ -264,7 +312,7 @@ private extension SingleImageViewController {
     func setUpScrollView() {
         scrollView.minimumZoomScale = 0.1
         scrollView.maximumZoomScale = 1.25
-        scrollView.contentSize = image?.size ?? .zero
+        scrollView.contentSize = imageView.image?.size ?? .zero
         scrollView.backgroundColor = .ypBlack
         scrollView.contentMode = .scaleAspectFit
         scrollView.translatesAutoresizingMaskIntoConstraints = false

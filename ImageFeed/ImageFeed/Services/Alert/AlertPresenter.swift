@@ -2,44 +2,122 @@ import UIKit
 
 final class AlertPresenter: AlertPresenterProtocol {
     
-    private func configure(
-        header: String,
-        body: String,
-        buttonText: String,
-        buttonTapCompletion: (() -> Void)?
-    ) -> UIAlertController {
-        
-        let alert = UIAlertController(
-            title: header,
-            message: body,
-            preferredStyle: .alert
-        )
-        let action = UIAlertAction(
-            title: buttonText,
-            style: .default
-        ) { [weak self] _ in
-            guard let _ = self else { return }
-            buttonTapCompletion?()
-        }
-        action.accessibilityIdentifier = AccessibilityElement.alertOKButton.rawValue
-        alert.addAction(action)
-        return alert
-        
-    }
-    
+    /// Retry alert
     @MainActor
     @preconcurrency
     func present(
-        kind: AlertKind,
-        present: @MainActor (UIViewController, Bool, (() -> Void)?) -> Void,
-        _ completion: (() -> Void)? = nil
+        primaryAction: @escaping () -> Void,
+        retryAction: @escaping () -> Void,
+        present: @MainActor (UIViewController, Bool, (() -> Void)?) -> Void
     ) {
-        let alert = configure(
-            header: kind.header,
-            body: kind.body,
-            buttonText: kind.buttonText,
-            buttonTapCompletion: completion
+        let alert = UIAlertController(
+            title: "Что-то пошло не так.",
+            message: "Попробовать ещё раз?",
+            preferredStyle: .alert
         )
+        let primaryAction = UIAlertAction(
+            title: "Не надо",
+            style: .default
+        ) { _ in
+            alert.dismiss(animated: true, completion: primaryAction)
+        }
+        let retryAction = UIAlertAction(
+            title: "Повторить",
+            style: .default
+        ) { _ in
+            alert.dismiss(animated: true, completion: retryAction)
+        }
+        
+        primaryAction.accessibilityIdentifier = AccessibilityElement.alertOKButton.rawValue
+        alert.addAction(primaryAction)
+        alert.addAction(retryAction)
+        
+        present(alert, true, nil)
+    }
+    
+    /// Auth error alert
+    @MainActor
+    @preconcurrency
+    func present(
+        present: @MainActor (UIViewController, Bool, (() -> Void)?) -> Void,
+        action: @escaping () -> Void
+    ) {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так(",
+            message: "Не удалось войти в систему",
+            preferredStyle: .alert
+        )
+
+        let action = UIAlertAction(
+            title: "Ок",
+            style: .default
+        ) { _ in
+            alert.dismiss(animated: true, completion: action)
+        }
+        
+        action.accessibilityIdentifier = AccessibilityElement.alertOKButton.rawValue
+        alert.addAction(action)
+        
+        present(alert, true, nil)
+    }
+    
+    /// Any error primary alert
+    @MainActor
+    @preconcurrency
+    func present(
+        present: @MainActor (UIViewController, Bool, (() -> Void)?) -> Void
+    ) {
+        let alert = UIAlertController(
+            title: "Что-то пошло не так(",
+            message: "Не удалось выполнить запрос",
+            preferredStyle: .alert
+        )
+
+        let action = UIAlertAction(
+            title: "Ок",
+            style: .default
+        ) { _ in
+            alert.dismiss(animated: true)
+        }
+        
+        action.accessibilityIdentifier = AccessibilityElement.alertOKButton.rawValue
+        alert.addAction(action)
+        
+        present(alert, true, nil)
+    }
+    
+    /// Logout alert
+    @MainActor
+    @preconcurrency
+    func present(
+        present: @MainActor (UIViewController, Bool, (() -> Void)?) -> Void,
+        yesButtonAction: @escaping () -> Void
+    ) {
+        let alert = UIAlertController(
+            title: "Пока, пока!",
+            message: "Уверены, что хотите выйти?",
+            preferredStyle: .alert
+        )
+
+        let yesButtonAction = UIAlertAction(
+            title: "Да",
+            style: .default
+        ) { _ in
+            alert.dismiss(animated: true)
+            yesButtonAction()
+        }
+        
+        let noButtonAction = UIAlertAction(
+            title: "Нет",
+            style: .default
+        ) { _ in
+            alert.dismiss(animated: true)
+        }
+        
+        yesButtonAction.accessibilityIdentifier = AccessibilityElement.alertOKButton.rawValue
+        alert.addAction(yesButtonAction)
+        alert.addAction(noButtonAction)
+        
         present(alert, true, nil)
     }
 }

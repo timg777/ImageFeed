@@ -1,5 +1,6 @@
 import Foundation
 
+// MARK: - Unsplash user result model
 struct UserResult: Codable {
     let profileImage: [String:String]
     
