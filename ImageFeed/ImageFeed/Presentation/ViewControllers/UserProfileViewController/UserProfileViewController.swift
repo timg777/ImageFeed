@@ -1,7 +1,7 @@
 import UIKit
 import Kingfisher
 
-final class UserProfileViewController: UIViewController {
+final class UserProfileViewController: UIViewController & UserProfileViewControllerProtocol {
 
     // MARK: - Private Views
     private lazy var userProfileImage: UIImageView = {
@@ -26,65 +26,36 @@ final class UserProfileViewController: UIViewController {
         .init()
     }()
     
-    // MARK: - Private Constants
-    private let storage: StorageProtocol = Storage.shared
-    private let profileService = ProfileService.shared
-    private let profileImageService = ProfileImageService.shared
-    
     // MARK: - Private Properties
-    private lazy var observerObject: Observer? = {
-        try? Observer(
-            self,
-            for: [
-                .profileImageServiceDidChangeNotification
-            ]
-        )
-    }()
-    
     private var alertPresenter: AlertPresenterProtocol?
+    
+    // MARK: - Internal Properties
+    var presenter: UserProfilePresenterProtocol?
     
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        if let observerObject {
-            NotificationCenterManager.shared.addObserver(observerObject)
-        } else {
-            logErrorToSTDIO(
-                errorDescription: "Failed to create observer object for notifications"
-            )
-        }
+        presenter?.viewDidLoad()
         
         alertPresenter = AlertPresenter()
         
         setUpViews()
-        updateLabels()
-    }
-
-    
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        
-        if profileImageService.avatarURLString == nil {
-            userProfileImage.layer.addGradientLoadingAnimation(
-                cornerRadius: UserProfileViewConstraints.userProfileImage_LayerCornerRadiusConstant.rawValue
-            )
-        }
-        
-        if profileService.profile == nil {
-            userProfileImage.layer.scaleGradientAnimationSubLayer(scaleFactor: 1.2)
-            usernameLabel.layer.addGradientLoadingAnimation(cornerRadius: 5)
-            nicknameLabel.layer.addGradientLoadingAnimation(cornerRadius: 5)
-            aboutUserLabel.layer.addGradientLoadingAnimation(cornerRadius: 5)
-        }
-    }
-    
-    deinit {
-        NotificationCenterManager.shared.removeObserver(observerObject)
     }
 }
 
-// MARK: - Extensions + Private Buttons Actions
+// MARK: - Extensions + Internal UserProfileViewController -> UserProfileViewControllerProtocol Conformance
+extension UserProfileViewController {
+    func setUserProfile(_ profile: Profile) {
+        updateLabels(using: profile)
+    }
+    
+    func setProfileImage(using url: URL) {
+        updateProfileImage(using: url)
+    }
+}
+
+// MARK: - Extensions + Private UserProfileViewController Buttons Actions
 private extension UserProfileViewController {
     @objc func logoutButtonTapped() {
         DispatchQueue.main.async {
@@ -103,49 +74,11 @@ private extension UserProfileViewController {
     }
 }
 
-// MARK: - Extensions + Internal NotificationObserver Conformance
-extension UserProfileViewController: NotificationObserver {
-    func handleNotification(_ notification: Notification) {
-        if notification.name == .profileImageServiceDidChangeNotification {
-            guard
-                let profileImageURLString = notification.userInfo?[UserInfoKey.profileImageURLString.rawValue] as? String
-            else {
-                logErrorToSTDIO(
-                    errorDescription: "No profileImageURLString found in notification"
-                )
-                return
-            }
-            
-            userProfileImage.layer.removeAllAnimations()
-            userProfileImage.layer.sublayers?.removeAll()
-            usernameLabel.layer.removeAllAnimations()
-            usernameLabel.layer.sublayers?.removeAll()
-            nicknameLabel.layer.removeAllAnimations()
-            nicknameLabel.layer.sublayers?.removeAll()
-            aboutUserLabel.layer.removeAllAnimations()
-            aboutUserLabel.layer.sublayers?.removeAll()
-            
-            updateProfileImage(using: profileImageURLString)
-        }
-    }
-}
-
-// MARK: - Extensions + Private UI Updates
+// MARK: - Extensions + Private UserProfileViewController UI Updates
 private extension UserProfileViewController {
     
-    func updateProfileImage(using profileImageURLString: String) {
-        guard
-            let profileImageURL = URL(string: profileImageURLString)
-        else {
-            logErrorToSTDIO(
-                errorDescription: "Failed to create URL using user profile photo URL String -> \(profileImageURLString)"
-            )
-            return
-        }
-        
+    func updateProfileImage(using profileImageURL: URL) {
         let processor = RoundCornerImageProcessor(cornerRadius: 20)
-        
-        userProfileImage.kf.indicatorType = .activity
         
         userProfileImage.kf.setImage(
             with: profileImageURL,
@@ -155,34 +88,31 @@ private extension UserProfileViewController {
             ]) { [weak self] result in
                 guard let self else { return }
                 switch result {
-                case .success(let imageResult):
-                    userProfileImage.image = imageResult.image
+                case .success:
+                    userProfileImage.layer.sublayers?.removeAll()
                 case .failure(let error):
                     logErrorToSTDIO(
                         errorDescription: error.localizedDescription
                     )
                 }
             }
-
     }
     
-    func updateLabels() {
-        guard
-            let profile = profileService.profile
-        else {
-            logErrorToSTDIO(
-                errorDescription: "Failed to retrieve user ProfileService.profile. No user profile has been found"
-            )
-            return
+    func updateLabels(using profile: Profile) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self else { return }
+            usernameLabel.text = profile.name
+            nicknameLabel.text = profile.loginName
+            aboutUserLabel.text = profile.bio
+            
+            usernameLabel.layer.sublayers?.removeAll()
+            nicknameLabel.layer.sublayers?.removeAll()
+            aboutUserLabel.layer.sublayers?.removeAll()
         }
-        
-        usernameLabel.text = profile.name
-        nicknameLabel.text = profile.loginName
-        aboutUserLabel.text = profile.bio
     }
 }
 
-// MARK: - Extensions + Private Setting Up Views
+// MARK: - Extensions + Private UserProfileViewController Setting Up Views
 private extension UserProfileViewController {
     func setUpViews() {
         view.backgroundColor = .ypBlack
@@ -200,6 +130,15 @@ private extension UserProfileViewController {
         setUpFavoriteLabel()
         
         setUpEmptyFavoritesImageView()
+        
+        userProfileImage.layer.addGradientLoadingAnimation(
+            cornerRadius: UserProfileViewConstraints.userProfileImage_LayerCornerRadiusConstant.rawValue
+        )
+        userProfileImage.layer.scaleGradientAnimationSubLayer(scaleFactor: 1.2)
+        
+        usernameLabel.layer.addGradientLoadingAnimation(cornerRadius: 5)
+        nicknameLabel.layer.addGradientLoadingAnimation(cornerRadius: 5)
+        aboutUserLabel.layer.addGradientLoadingAnimation(cornerRadius: 5)
     }
     
     func setUpUserProfileImage() {
@@ -287,6 +226,7 @@ private extension UserProfileViewController {
             for: .normal
         )
         logoutButton.imageView?.contentMode = .scaleAspectFit
+        logoutButton.accessibilityIdentifier = AccessibilityElement.logoutButton.rawValue
         logoutButton.translatesAutoresizingMaskIntoConstraints = false
         
         logoutButton.addTarget(self, action: #selector(logoutButtonTapped), for: .touchUpInside)
@@ -331,7 +271,6 @@ private extension UserProfileViewController {
     func setUpEmptyFavoritesImageView() {
         emptyFavotiesImageView.image = UIImage(resource: .noPhoto)
         emptyFavotiesImageView.translatesAutoresizingMaskIntoConstraints = false
-        
         view.addSubview(emptyFavotiesImageView)
         
         NSLayoutConstraint.activate([

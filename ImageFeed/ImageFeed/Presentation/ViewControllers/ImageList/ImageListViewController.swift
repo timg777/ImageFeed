@@ -1,83 +1,44 @@
 import UIKit
 
-final class ImageListViewController: UIViewController {
+final class ImageListViewController: UIViewController & ImageListViewControllerProtocol {
 
     // MARK: - Private Views
     private lazy var tableView: UITableView = {
         .init()
     }()
     
-    // MARK: - Private Contants
-    private let imagesListService: ImagesListServiceProtocol = ImagesListService.shared
-    
-    private lazy var observerObject: Observer? = {
-        try? Observer(
-            self,
-            from: [
-                ImagesListService.self
-            ],
-            for: [
-                .imagesListServicePhotosDidChangeNotification
-            ]
-        )
-    }()
-    
-    // MARK: - Private Properties
-    private var photos = [Photo]()
-    private var alertPresenter: AlertPresenterProtocol?
-    
     // MARK: - Internal Properties
-    var token: String? {
-        SecureStorage.shared.getToken()
-    }
+    var presenter: ImageListPresenterProtocol?
     
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        if let observerObject {
-            NotificationCenterManager.shared.addObserver(observerObject)
-        } else {
-            logErrorToSTDIO(
-                errorDescription: "Failed to create observer object for notifications"
-            )
-        }
-        
-        alertPresenter = AlertPresenter()
-        
-        UIBlockingActivityIndicator.showActivityIndicator()
-        imagesListService.fetchPhotosNextPage { [weak self] result in
-            UIBlockingActivityIndicator.dismissActivityIndicator()
-            guard let self else { return }
-            switch result {
-            case .success:
-                break
-            case .failure:
-                alertPresenter?.present(present: present)
-            }
-        }
+        presenter?.viewDidLoad()
         
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 200
-        
-        setUpViews()
         tableView.register(
             ImagesListCell.self,
             forCellReuseIdentifier: ImagesListCell.reuseIdentifier
         )
-    }
-    
-    deinit {
-        NotificationCenterManager.shared.removeObserver(observerObject)
+        
+        setUpViews()
     }
 }
 
-// MARK: - Extensions + Internal ImageListViewController -> NotificationObserver Conformance
-extension ImageListViewController: NotificationObserver {
-    func handleNotification(_ notification: Notification) {
-        if notification.name == .imagesListServicePhotosDidChangeNotification {
-            updateTableViewAnimated()
-        }
+// MARK: - Extensions + Internal ImageListViewController -> ImageListViewControllerProtocol Conformance
+extension ImageListViewController {
+    func lockUI() {
+        UIBlockingActivityIndicator.showActivityIndicator()
+    }
+    
+    func unlockUI() {
+        UIBlockingActivityIndicator.dismissActivityIndicator()
+    }
+    
+    func updateTableViewIfNeeded(photoCountsAtDifferentTime: (Int, Int)) {
+        updateTableViewAnimated(photoCountsAtDifferentTime)
     }
 }
 
@@ -85,25 +46,15 @@ extension ImageListViewController: NotificationObserver {
 extension ImageListViewController: ImagesListCellDelegate {
     func didTapLike(_ cell: ImagesListCell) {
         guard
-            let indexPath = tableView.indexPath(for: cell),
-            let token = token
+            let indexPath = tableView.indexPath(for: cell)
         else { return }
         
-        UIBlockingActivityIndicator.showActivityIndicator()
-        imagesListService.changeLike(
-            token: token,
-            photoIndex: indexPath.row
-        ) { [weak self] result in
-            UIBlockingActivityIndicator.dismissActivityIndicator()
-            guard let self else { return }
-            switch result {
-            case .success:
-                photos = imagesListService.photos
-                cell.setIsLiked(photos[indexPath.row].isLiked)
-            case .failure:
-                alertPresenter?.present(present: present)
+        presenter?.didTapLike(
+            for: indexPath.row,
+            changeCellLikeState: { state in
+                cell.setIsLiked(state)
             }
-        }
+        )
     }
 }
 
@@ -115,7 +66,7 @@ private extension ImageListViewController {
             animated: true
         )
         let singleImageViewController = SingleImageViewController()
-        let photo = imagesListService.photos[safe: indexPath.row]
+        let photo = presenter?.photos[safe: indexPath.row]
         singleImageViewController.imageURLString = photo?.largeImageURLString
         singleImageViewController.imageSize = photo?.size
         
@@ -141,7 +92,7 @@ extension ImageListViewController: UITableViewDelegate {
         _ tableView: UITableView,
         heightForRowAt indexPath: IndexPath
     ) -> CGFloat {
-        let imageSize = imagesListService.photos[safe: indexPath.row]?.size ?? .zero
+        let imageSize = presenter?.photos[safe: indexPath.row]?.size ?? .zero
         
         let imageInsets = GlobalNamespace.imageInsets
         let imageViewWidth = tableView.bounds.width - imageInsets.left - imageInsets.right
@@ -156,19 +107,7 @@ extension ImageListViewController: UITableViewDelegate {
         willDisplay cell: UITableViewCell,
         forRowAt indexPath: IndexPath
     ) {
-        if indexPath.row == photos.count - 1 {
-            UIBlockingActivityIndicator.showActivityIndicator()
-            imagesListService.fetchPhotosNextPage { [weak self] result in
-                guard let self else { return }
-                switch result {
-                case .success:
-                    break
-                case .failure:
-                    alertPresenter?.present(present: present)
-                }
-                UIBlockingActivityIndicator.dismissActivityIndicator()
-            }
-        }
+        presenter?.tableView(willDisplayCellAt: indexPath.row)
     }
 }
 
@@ -178,7 +117,7 @@ extension ImageListViewController: UITableViewDataSource {
         _ tableView: UITableView,
         numberOfRowsInSection section: Int
     ) -> Int {
-        photos.count
+        presenter?.photos.count ?? 0
     }
     
     func tableView(
@@ -200,7 +139,7 @@ extension ImageListViewController: UITableViewDataSource {
             return UITableViewCell()
         }
 
-        let photo = photos[safe: indexPath.row]
+        let photo = presenter?.photos[safe: indexPath.row]
         cell.configureListCell(photo: photo)
         cell.delegate = self
         return cell
@@ -209,12 +148,8 @@ extension ImageListViewController: UITableViewDataSource {
 
 // MARK: - Extensions + Private ImageListViewController View Updates
 private extension ImageListViewController {
-
-    func updateTableViewAnimated() {
-        let oldPhotoCount = photos.count
-        let newPhotoCount = imagesListService.photos.count
-        photos = imagesListService.photos
-
+    func updateTableViewAnimated(_ photoCountsAtDifferentTime: (Int, Int)) {
+        let (oldPhotoCount, newPhotoCount) = photoCountsAtDifferentTime
         tableView.beginUpdates()
         
         if oldPhotoCount < newPhotoCount {
@@ -231,7 +166,6 @@ private extension ImageListViewController {
         
         tableView.endUpdates()
     }
-
 }
 
 // MARK: - Extensions + Private ImageListViewController Setting Up Views
@@ -240,6 +174,7 @@ private extension ImageListViewController {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.backgroundColor = .ypBlack
+        tableView.accessibilityIdentifier = AccessibilityElement.tableViewId.rawValue
         tableView.translatesAutoresizingMaskIntoConstraints = false
         
         view.addSubview(tableView)

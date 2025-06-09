@@ -1,6 +1,6 @@
 import Foundation
 
-protocol ProfileImageProtocol {
+protocol ProfileImageServiceProtocol {
     static var shared: Self { get }
     var avatarURLString: String? { get }
     var task: URLSessionTask? { get }

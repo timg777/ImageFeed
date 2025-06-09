@@ -1,6 +1,6 @@
 import UIKit
 
-final class ProfileImageService: ProfileImageProtocol, AnyObject {
+final class ProfileImageService: ProfileImageServiceProtocol {
     
     enum ImageSizeStrategy: String {
         case small
@@ -8,9 +8,11 @@ final class ProfileImageService: ProfileImageProtocol, AnyObject {
         case large
     }
     
+    // MARK: - Singletone initialization
     static let shared = ProfileImageService()
     private init() {}
     
+    // MARK: - Private Properties
     private(set) var avatarURLString: String? {
         didSet {
             NotificationCenter.default
@@ -22,7 +24,10 @@ final class ProfileImageService: ProfileImageProtocol, AnyObject {
         }
     }
     private(set) var task: URLSessionTask?
-    
+}
+
+// MARK: - Extensions + Internal ProfileImageService -> ProfileImageServiceProtocol Conformance
+extension ProfileImageService {
     func fetchProfileImageURL(
         username: String,
         token: String,
@@ -30,11 +35,17 @@ final class ProfileImageService: ProfileImageProtocol, AnyObject {
     ) {
         
         if let _ = task {
-            handler(.failure(NetworkError.repeatedRequest))
+            handler(
+                .failure(NetworkError.repeatedRequest)
+            )
             return
         }
         
-        let urlString = Constants.Service.profileImage.urlString + username
+        let urlString =
+        Constants
+            .Service
+            .profileImage
+            .urlString + username
         let headers: [String:String] = ["Authorization": "Bearer \(token)"]
         let imageSizeStrategy: ImageSizeStrategy = .large
         
@@ -50,18 +61,24 @@ final class ProfileImageService: ProfileImageProtocol, AnyObject {
                     guard
                         let avatarURLString = userResult.profileImage[imageSizeStrategy.rawValue]
                     else {
-                        handler(.failure(ParseError.decodeError(T: UserResult.self)))
+                        handler(
+                            .failure(ParseError.decodeError(T: UserResult.self))
+                        )
                         return
                     }
                     
                     self.avatarURLString = avatarURLString
-                    handler(.success(avatarURLString))
+                    handler(
+                        .success(avatarURLString)
+                    )
                     
                     task?.cancel()
                     task = nil
 
                 case .failure(let error):
-                    handler(.failure(error))
+                    handler(
+                        .failure(error)
+                    )
                     task?.cancel()
                     task = nil
                 }
@@ -69,7 +86,9 @@ final class ProfileImageService: ProfileImageProtocol, AnyObject {
             
             task?.resume()
         } catch {
-            handler(.failure(error))
+            handler(
+                .failure(error)
+            )
             task?.cancel()
             task = nil
         }

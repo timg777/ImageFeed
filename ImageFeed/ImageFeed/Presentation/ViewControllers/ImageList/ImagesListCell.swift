@@ -225,7 +225,6 @@ private extension ImagesListCell {
         cellImage.contentMode = .center
         cellImage.clipsToBounds = true
         cellImage.translatesAutoresizingMaskIntoConstraints = false
-        
         cellImage.image = UIImage(resource: .markStub)
 
         addSubview(cellImage)
@@ -261,6 +260,7 @@ private extension ImagesListCell {
             "",
             for: .normal
         )
+        likeButton.accessibilityIdentifier = AccessibilityElement.cellLikeButton.rawValue
         likeButton.translatesAutoresizingMaskIntoConstraints = false
         likeButton.addTarget(self, action: #selector(likeButtonTapped), for: .touchUpInside)
         

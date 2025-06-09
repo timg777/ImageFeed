@@ -2,60 +2,31 @@ import UIKit
 import WebKit
 import Kingfisher
 
-final class SplashViewController: UIViewController {
+final class SplashViewController: UIViewController & SplashViewControllerProtocol {
     
     // MARK: - Private Views
     private lazy var launchImage: UIImageView = {
         .init()
     }()
     
-    // MARK: - Private Constants
-    private var storage: StorageProtocol = Storage.shared
-    private let secureStorage: SecureStorageProtocol = SecureStorage.shared
-    private let profileService = ProfileService.shared
-    private let profileImageService = ProfileImageService.shared
-    private let imagesListService = ImagesListService.shared
-    
-    // MARK: - Private Properties
-    private var alertPresenter: AlertPresenterProtocol?
-    
-    private lazy var observerObject: Observer? = {
-        try? .init(
-            self,
-            from: [
-                UserProfileViewController.self
-            ],
-            for: [
-                .logoutNotification
-            ]
-        )
-    }()
+    // MARK: - Internal Properties
+    var presenter: SplashViewPresenterProtocol?
     
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        alertPresenter = AlertPresenter()
-        addObserverObject()
+        DispatchQueue.main.async { [weak self] in
+            self?.presenter?.viewDidLoad()
+        }
         setUpViews()
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        if storage.isNotFirstLaunch {
-            if let token = secureStorage.getToken() {
-                UIBlockingActivityIndicator.showActivityIndicator()
-                fetchUserProfile(by: token) { [weak self] username in
-                    self?.fetchUserProfilePhoto(by: token, username: username)
-                }
-                routeToMain()
-            } else {
-                routeToAuthentication()
-            }
-        } else {
-            storage.isNotFirstLaunch = true
-            routeToAuthentication()
+        DispatchQueue.main.async { [weak self] in
+            self?.presenter?.viewDidAppear()
         }
     }
     
@@ -63,10 +34,6 @@ final class SplashViewController: UIViewController {
         super.viewWillAppear(animated)
         
         setNeedsStatusBarAppearanceUpdate()
-    }
-    
-    deinit {
-        NotificationCenterManager.shared.removeObserver(observerObject)
     }
 }
 
@@ -77,114 +44,19 @@ extension SplashViewController {
     }
 }
 
-// MARK: - Extensions + Internal SplashViewController NotificationObserver Conformance
-extension SplashViewController: NotificationObserver {
-    func handleNotification(_ notification: Notification) {
-        if notification.name == .logoutNotification {
-            logout()
-        }
-    }
-}
-
 // MARK: - Extensions + Internal SplashViewController -> AuthViewControllerDelegate Conformance
 extension SplashViewController: AuthViewControllerDelegate {
     func didAuthenticate(_ vc: AuthViewController, with token: String) {
-        secureStorage.setToken(token)
+        presenter?.didAuthenticate(vc, with: token)
     }
     
     func didFailAuthentication(with error: any Error) {
-        routeToAuthentication()
-        logErrorToSTDIO(
-            errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
-        )
+        presenter?.didFailAuthentication(with: error)
     }
 }
 
-// MARK: - Extensions + Private SplashViewController Helpers
-private extension SplashViewController {
-    
-    func addObserverObject() {
-        if let observerObject {
-            NotificationCenterManager.shared.addObserver(observerObject)
-        } else {
-            logErrorToSTDIO(
-                errorDescription: "Failed to create observer object for notifications"
-            )
-        }
-    }
-    
-    func logout() {
-        HTTPCookieStorage.shared.removeCookies(since: Date.distantPast)
-        WKWebsiteDataStore.default().fetchDataRecords(
-            ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()
-        ) { records in
-            records.forEach {
-                WKWebsiteDataStore.default().removeData(
-                    ofTypes: $0.dataTypes,
-                    for: [$0],
-                    completionHandler: {}
-                )
-            }
-        }
-        
-        URLCache.shared.removeAllCachedResponses()
-        UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier ?? "")
-        UserDefaults.standard.synchronize()
-        ImageCache.default.clearMemoryCache()
-        secureStorage.removeToken()
-        
-        NotificationCenterManager.shared.removeAllObservers()
-        NotificationCenterManager.shared.clearNotifications()
-        
-        routeToAuthentication()
-    }
-    
-    func fetchUserProfile(
-        by token: String,
-        completion: ((String) -> Void)? = nil
-    ) {
-        profileService.fetchProfile(
-            httpMethod: .GET,
-            token: token
-        ) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success(let profile):
-                completion?(profile.username)
-            case .failure(let error):
-                logErrorToSTDIO(
-                    errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
-                )
-                self.alertPresenter?.present(present: self.present)
-            }
-        }
-    }
-    
-    func fetchUserProfilePhoto(
-        by token: String,
-        username: String,
-        completion: (() -> Void)? = nil
-    ) {
-        profileImageService.fetchProfileImageURL(
-            username: username,
-            token: token
-        ) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success(_):
-                completion?()
-            case .failure(let error):
-                logErrorToSTDIO(
-                    errorDescription: (error as? TracedError)?.description ?? error.localizedDescription
-                )
-                self.alertPresenter?.present(present: self.present)
-            }
-        }
-    }
-}
-
-// MARK: - Extensions + Private SplashViewController Routing
-private extension SplashViewController {
+// MARK: - Extensions + Internal SplashViewController -> SplashViewControllerProtocol Conformance
+extension SplashViewController {
     func routeToAuthentication() {
         let authViewController = AuthViewController()
         authViewController.delegate = self

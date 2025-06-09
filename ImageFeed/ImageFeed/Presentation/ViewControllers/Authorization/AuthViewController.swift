@@ -28,8 +28,13 @@ final class AuthViewController: UIViewController {
 // MARK: - Extensions + Internal AuthViewController -> WebViewViewControllerDelegate Conformance
 extension AuthViewController: WebViewViewControllerDelegate {
     func webViewViewController(_ vc: WebViewViewController, didAuthenticateWithCode code: String) {
-        UIBlockingActivityIndicator.showActivityIndicator()
+        DispatchQueue.main.async {
+            UIBlockingActivityIndicator.showActivityIndicator()
+        }
         OAuth2Service.shared.fetchOAuthToken(code: code) { [weak self] result in
+            DispatchQueue.main.async {
+                UIBlockingActivityIndicator.dismissActivityIndicator()
+            }
             guard let self else { return }
             switch result {
             case .success(let token):
@@ -39,7 +44,6 @@ extension AuthViewController: WebViewViewControllerDelegate {
                 delegate?.didFailAuthentication(with: error)
                 showAlert()
             }
-            UIBlockingActivityIndicator.dismissActivityIndicator()
         }
     }
     
@@ -51,8 +55,13 @@ extension AuthViewController: WebViewViewControllerDelegate {
 // MARK: - Extensions + Private AuthViewController Button Handlers
 private extension AuthViewController {
     @objc func didTapLoginButton() {
+        let authHelper = AuthHelper()
+        let webViewPresenter = WebViewPresenter(authHelper: authHelper)
         let webViewViewController = WebViewViewController()
+        webViewPresenter.view = webViewViewController
+        webViewViewController.presenter = webViewPresenter
         webViewViewController.delegate = self
+        
         webViewViewController.modalPresentationStyle = .fullScreen
         present(
             webViewViewController,
@@ -94,6 +103,7 @@ private extension AuthViewController {
             for: .normal)
         loginButton.layer.cornerRadius = 16
         loginButton.translatesAutoresizingMaskIntoConstraints = false
+        loginButton.accessibilityIdentifier = AccessibilityElement.loginButton.rawValue
         loginButton.addTarget(
             self,
             action: #selector(didTapLoginButton),

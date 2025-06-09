@@ -3,6 +3,7 @@ import KeychainWrapper
 
 final class ImagesListService: ImagesListServiceProtocol {
     
+    // MARK: - Singletone initialization
     static let shared = ImagesListService()
     private init() {}
     
@@ -23,28 +24,10 @@ final class ImagesListService: ImagesListServiceProtocol {
         formatter.locale = Locale(identifier: "ru_RU")
         return formatter
     }()
-    
-//    func fetchPhotosNextPage(completion: @escaping (Result<Void, Error>) -> Void) {
-//        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-//            var resultPhotos = Set<Photo>()
-//            stubPhotos.forEach {
-//                resultPhotos.insert($0)
-//            }
-//            DispatchQueue.main.async { [weak self] in
-//                guard let self else { return }
-//                photos.append(contentsOf: resultPhotos.shuffled())
-//                completion(.success(()))
-//                
-//                NotificationCenter.default
-//                    .post(
-//                        name: .imagesListServicePhotosDidChangeNotification,
-//                        object: self
-//                    )
-//            }
-//        }
-//    }
-    
-    // MARK: - Internal Methods
+}
+
+// MARK: - Extensions + Internal ImagesListService -> ImagesListServiceProtocol Conformance
+extension ImagesListService {
     func fetchPhotosNextPage(completion: @escaping (Result<Void, Error>) -> Void) {
         
         if let _ = imagesFetchingTask {
@@ -75,11 +58,16 @@ final class ImagesListService: ImagesListServiceProtocol {
                     
                     switch result {
                     case .success(let unsplashPhotos):
-                        let resultPhotos = unsplashPhotos.map { self.convert($0) }.dropFirst()
+                        let resultPhotos =
+                        unsplashPhotos
+                            .map { self.convert($0) }
+                            .dropFirst()
                         
                         lastLoadedPage +=? 1
                         photos.append(contentsOf: resultPhotos)
-                        completion(.success(()))
+                        completion(
+                            .success(())
+                        )
                         NotificationCenter.default
                             .post(
                                 name: .imagesListServicePhotosDidChangeNotification,
@@ -90,7 +78,9 @@ final class ImagesListService: ImagesListServiceProtocol {
                         logErrorToSTDIO(
                             errorDescription: error.tracedDescription
                         )
-                        completion(.failure(error))
+                        completion(
+                            .failure(error)
+                        )
                     }
                 
                     cancelImgesFetchingTaskIfNeeded()
@@ -159,14 +149,18 @@ final class ImagesListService: ImagesListServiceProtocol {
                     guard let self else { return }
                     switch result {
                     case .success(let unsplashPhotoLikeResult):
-                        completion(.success(()))
+                        completion(
+                            .success(())
+                        )
                         updatePhoto(
                             convert(unsplashPhotoLikeResult.photo),
                             at: photoIndex
                         )
                         
                     case .failure(let error):
-                        completion(.failure(error))
+                        completion(
+                            .failure(error)
+                        )
                         logErrorToSTDIO(
                             errorDescription: error.tracedDescription
                         )
@@ -233,7 +227,10 @@ private extension ImagesListService {
     }
     
     @MainActor
-    func updatePhoto(_ photo: Photo, at index: Int) {
+    func updatePhoto(
+        _ photo: Photo,
+        at index: Int
+    ) {
         guard photos[safe: index] != nil else { return }
         photos[index] = photo
     }
@@ -260,102 +257,3 @@ private extension ImagesListService {
         imageLikeFetchingTask?.resume()
     }
 }
-
-//fileprivate let stubPhotos = [
-//    Photo(
-//        id: "0",
-//        size: .init(
-//            width: 4140,
-//            height: 2160
-//        ),
-//        createdAt: nil,
-//        welcomeDescription: nil,
-//        thumbImageURLString: "https://plus.unsplash.com/premium_photo-1748152778956-c4accfc55249?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyfHx8ZW58MHx8fHx8",
-//        largeImageURLString: "https://plus.unsplash.com/premium_photo-1748152778956-c4accfc55249?q=80&w=4140&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-//        isLiked: Bool.random()
-//    ),
-//    Photo(
-//        id: "1",
-//        size: .init(
-//            width: 4140,
-//            height: 2160
-//        ),
-//        createdAt: nil,
-//        welcomeDescription: nil,
-//        thumbImageURLString: "https://images.unsplash.com/photo-1747747004644-4ab29224deee?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwzfHx8ZW58MHx8fHx8",
-//        largeImageURLString: "https://images.unsplash.com/photo-1747747004644-4ab29224deee?q=80&w=4140&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-//        isLiked: Bool.random()
-//    ),
-//    Photo(
-//        id: "2",
-//        size: .init(
-//            width: 4287,
-//            height: 2200
-//        ),
-//        createdAt: nil,
-//        welcomeDescription: nil,
-//        thumbImageURLString: "https://images.unsplash.com/photo-1748033766479-fa6b0f9f6b33?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHw0fHx8ZW58MHx8fHx8",
-//        largeImageURLString: "https://images.unsplash.com/photo-1748033766479-fa6b0f9f6b33?q=80&w=4287&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-//        isLiked: Bool.random()
-//    ),
-//    Photo(
-//        id: "3",
-//        size: .init(
-//            width: 2488,
-//            height: 2250
-//        ),
-//        createdAt: nil,
-//        welcomeDescription: nil,
-//        thumbImageURLString: "https://plus.unsplash.com/premium_photo-1664127534631-f23f786af39d?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHw2fHx8ZW58MHx8fHx8",
-//        largeImageURLString: "https://plus.unsplash.com/premium_photo-1664127534631-f23f786af39d?q=80&w=2488&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-//        isLiked: Bool.random()
-//    ),
-//    Photo(
-//        id: "4",
-//        size: .init(
-//            width: 4333,
-//            height: 2300
-//        ),
-//        createdAt: nil,
-//        welcomeDescription: nil,
-//        thumbImageURLString: "https://plus.unsplash.com/premium_photo-1748204460747-165461dde421?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwxMHx8fGVufDB8fHx8fA%3D%3D",
-//        largeImageURLString: "https://plus.unsplash.com/premium_photo-1748204460747-165461dde421?q=80&w=4333&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-//        isLiked: Bool.random()
-//    ),
-//    Photo(
-//        id: "5",
-//        size: .init(
-//            width: 4287,
-//            height: 2200
-//        ),
-//        createdAt: nil,
-//        welcomeDescription: nil,
-//        thumbImageURLString: "https://images.unsplash.com/photo-1748324687714-1ca839539bca?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwxMnx8fGVufDB8fHx8fA%3D%3D",
-//        largeImageURLString: "https://images.unsplash.com/photo-1748324687714-1ca839539bca?q=80&w=4287&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-//        isLiked: Bool.random()
-//    ),
-//    Photo(
-//        id: "6",
-//        size: .init(
-//            width: 3861,
-//            height: 4120
-//        ),
-//        createdAt: nil,
-//        welcomeDescription: nil,
-//        thumbImageURLString: "https://images.unsplash.com/photo-1747491681738-d0ed9a30fed3?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwxNnx8fGVufDB8fHx8fA%3D%3D",
-//        largeImageURLString: "https://images.unsplash.com/photo-1747491681738-d0ed9a30fed3?q=80&w=3861&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-//        isLiked: Bool.random()
-//    ),
-//    Photo(
-//        id: "7",
-//        size: .init(
-//            width: 3712,
-//            height: 4100
-//        ),
-//        createdAt: nil,
-//        welcomeDescription: nil,
-//        thumbImageURLString: "https://images.unsplash.com/photo-1747734786792-317d1d8e8690?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyMHx8fGVufDB8fHx8fA%3D%3D",
-//        largeImageURLString: "https://images.unsplash.com/photo-1747734786792-317d1d8e8690?q=80&w=3712&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-//        isLiked: Bool.random()
-//    )
-//]

@@ -32,11 +32,13 @@ final class NotificationCenterManager {
         lastNotifications.removeAll()
         observers.removeAllObjects()
     }
-    
+}
+
+// MARK: - Extensions + Internal NotificationCenterManager Methods
+extension NotificationCenterManager {
     func addObserver(_ observer: Observer) {
         observers.add(observer)
         
-        guard !observers.allObjects.isEmpty else { return }
         lastNotifications.forEach {
             notifyObservers(notification: $0)
         }
@@ -62,7 +64,7 @@ final class NotificationCenterManager {
     }
 }
 
-// MARK: - Extensions + Private Managing
+// MARK: - Extensions + Private NotificationCenterManager Methods
 private extension NotificationCenterManager {
     
     func notifyObservers(notification: Notification) {

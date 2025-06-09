@@ -23,6 +23,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window = UIWindow(windowScene: scene)
         
         let rootVC = SplashViewController()
+        let presenter = SplashViewPresenter()
+        rootVC.presenter = presenter
+        presenter.view = rootVC
         window?.rootViewController = rootVC
         window?.makeKeyAndVisible()
     }
