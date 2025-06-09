@@ -21,11 +21,15 @@ extension SplashViewControllerSpy {
         mainRouteExpectation?.fulfill()
     }
     
-    func routeToAuthentication() {}
+    func routeToAuthentication() {
+        // do nothing
+    }
     
     func present(
         _ viewControllerToPresent: UIViewController,
         animated: Bool,
         completion: (() -> Void)?
-    ) {}
+    ) {
+        // do nothing
+    }
 }

@@ -22,7 +22,9 @@ final class WebViewPresenterSpy: WebViewPresenterProtocol {
         view?.load(request: request)
     }
     
-    func didUpdateProgressValue(_ progress: Float) {}
+    func didUpdateProgressValue(_ progress: Float) {
+        // do nothing
+    }
     
     func shouldHideProgress(for progress: Float) -> Bool {
         true

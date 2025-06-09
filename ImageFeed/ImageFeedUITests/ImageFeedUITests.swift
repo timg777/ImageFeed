@@ -16,6 +16,8 @@ final class ImageFeedUITests: XCTestCase {
         case tableViewId
     }
 
+    private let login: String = "_"
+    private let password: String = "_"
     
     private let app = XCUIApplication()
 
@@ -25,6 +27,7 @@ final class ImageFeedUITests: XCTestCase {
         app.launch()
     }
 
+    @MainActor
     func testAuth() throws {
         let loginButton = app.buttons[AccessibilityElement.loginButton.rawValue]
         XCTAssertTrue(
@@ -46,7 +49,7 @@ final class ImageFeedUITests: XCTestCase {
         )
         
         loginTextField.tap()
-        loginTextField.typeText("_")
+        loginTextField.typeText(login)
         loginTextField.swipeUp()
         
         let passwordTextField = webView.descendants(matching: .secureTextField).element
@@ -55,7 +58,7 @@ final class ImageFeedUITests: XCTestCase {
         )
         
         passwordTextField.tap()
-        passwordTextField.typeText("_")
+        passwordTextField.typeText(password)
         passwordTextField.swipeUp()
         
         let webViewLoginButton = webView.buttons["Login"]
@@ -176,6 +179,7 @@ final class ImageFeedUITests: XCTestCase {
         )
     }
     
+    @MainActor
     func testProfile() throws {
         let profileTabBarItem = app.tabBars.buttons.element(boundBy: 1)
         XCTAssertTrue(

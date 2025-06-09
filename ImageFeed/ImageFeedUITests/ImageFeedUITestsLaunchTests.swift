@@ -1,10 +1,3 @@
-//
-//  ImageFeedUITestsLaunchTests.swift
-//  ImageFeedUITests
-//
-//  Created by Superior Warden on 20.03.2025.
-//
-
 import XCTest
 
 final class ImageFeedUITestsLaunchTests: XCTestCase {

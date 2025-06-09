@@ -37,10 +37,10 @@ private extension TabBarController {
             selectedImage: UIImage(resource: .stackActive)
         )
         
-        let userProfilePresneter = UserProfilePresenter()
+        let userProfilePresenter = UserProfilePresenter()
         let userProfileViewController = UserProfileViewController()
-        userProfileViewController.presenter = userProfilePresneter
-        userProfilePresneter.view = userProfileViewController
+        userProfileViewController.presenter = userProfilePresenter
+        userProfilePresenter.view = userProfileViewController
         userProfileViewController.tabBarItem =
         UITabBarItem(
             title: "",

@@ -35,5 +35,7 @@ extension ImageListViewControllerSpy {
         _ viewControllerToPresent: UIViewController,
         animated: Bool,
         completion: (() -> Void)?
-    ) {}
+    ) {
+        // do nothing
+    }
 }

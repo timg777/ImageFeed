@@ -3,11 +3,13 @@ import XCTest
 
 final class NotificationCenterManagerTests: XCTestCase {
     
-    let manager = NotificationCenterManager.shared
+    private let manager = NotificationCenterManager.shared
     private let notificationName = Notification.Name.logoutNotification
     private let infoToSend: [AnyHashable: Any] = ["SomeKey":"Some value"]
     
     func testAddObserver() throws {
+        clearManagerData()
+        
         let observer = MockObserver()
         let observerObject =
         try Observer(
@@ -20,11 +22,14 @@ final class NotificationCenterManagerTests: XCTestCase {
         
         let observersCount = manager.observers.allObjects.count
         let managerContainsObserver = manager.observers.contains(observerObject)
+
         XCTAssertEqual(observersCount, 1)
         XCTAssertTrue(managerContainsObserver)
     }
     
     func testRemoveObserver() throws {
+        clearManagerData()
+        
         let observer = MockObserver()
         let observerObject =
         try Observer(
@@ -34,38 +39,41 @@ final class NotificationCenterManagerTests: XCTestCase {
             ]
         )
         manager.addObserver(observerObject)
-        manager.removeObserver(observer)
+        manager.removeObserver(observerObject)
         
         let observersCount = manager.observers.allObjects.count
         let managerContainsObserver = manager.observers.contains(observerObject)
+        
         XCTAssertEqual(observersCount, 0)
         XCTAssertFalse(managerContainsObserver)
     }
     
     func testRemoveAllObservers() throws {
-        let observer1 = MockObserver()
-        let observer2 = MockObserver()
+        clearManagerData()
         
-        observer1.receivedNotification = .init(name: .logoutNotification)
-        observer2.receivedNotification = .init(name: .imagesListServiceDidChangeNotification)
+        let firstObserver = MockObserver()
+        let secondObserver = MockObserver()
         
-        let observerObject1 =
+        firstObserver.receivedNotification = .init(name: .logoutNotification)
+        secondObserver.receivedNotification = .init(name: .imagesListServicePhotosDidChangeNotification)
+        
+        let firstObserverObject =
         try Observer(
-            observer1,
+            firstObserver,
             for: [
                 .logoutNotification
             ]
         )
-        let observerObject2 =
+        let secondObserverObject =
         try Observer(
-            observer2,
+            secondObserver,
             for: [
-                .imagesListServiceDidChangeNotification
+                .imagesListServicePhotosDidChangeNotification
             ]
         )
         
-        manager.addObserver(observerObject1)
-        manager.addObserver(observerObject2)
+        manager.addObserver(firstObserverObject)
+        manager.addObserver(secondObserverObject)
         manager.removeAllObservers()
         
         let observersCount = manager.observers.allObjects.count
@@ -73,6 +81,8 @@ final class NotificationCenterManagerTests: XCTestCase {
     }
     
     func testNotificationReceivedByServiceWithZeroObservers() throws {
+        clearManagerData()
+        
         let sender = MockSender(
             notificationName: notificationName,
             infoToSend: infoToSend
@@ -95,6 +105,7 @@ final class NotificationCenterManagerTests: XCTestCase {
     }
     
     func testNotificationWhenObserverInitializedBeforeMessageSended() throws {
+        clearManagerData()
         
         let expectation = self.expectation(description: "Wait for notification")
         let sender = MockSender(
@@ -134,6 +145,8 @@ final class NotificationCenterManagerTests: XCTestCase {
     }
     
     func testNotificationWhenObserverInitializedAfterMessageSended() throws {
+        clearManagerData()
+        
         let expectation = self.expectation(description: "Wait for notification")
         let sender = MockSender(
             notificationName: notificationName,
@@ -171,44 +184,9 @@ final class NotificationCenterManagerTests: XCTestCase {
             infoToSend["SomeKey"] as? String
         )
     }
-}
-
-
-
-
-
-final class MockObserver: NotificationObserver {
-    var receivedNotification: Notification?
-    let expectation: XCTestExpectation?
     
-    init(expectation: XCTestExpectation? = nil) {
-        self.expectation = expectation
-    }
-    
-    func handleNotification(_ notification: Notification) {
-        receivedNotification = notification
-        expectation?.fulfill()
-    }
-}
-
-final class MockSender {
-    private let notificationName: Notification.Name
-    private let infoToSend: [AnyHashable: Any]
-    
-    init(
-        notificationName: Notification.Name,
-        infoToSend: [AnyHashable : Any]
-    ) {
-        self.notificationName = notificationName
-        self.infoToSend = infoToSend
-    }
-    
-    func sendNotification() {
-        NotificationCenter.default
-            .post(
-                name: notificationName,
-                object: self,
-                userInfo: infoToSend
-            )
+    private func clearManagerData() {
+        manager.clearNotifications()
+        manager.removeAllObservers()
     }
 }
