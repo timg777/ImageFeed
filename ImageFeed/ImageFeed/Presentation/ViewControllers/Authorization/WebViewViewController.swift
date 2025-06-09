@@ -2,13 +2,10 @@ import UIKit
 import WebKit
 import ProgressHUD
 
-final class WebViewViewController: UIViewController {
+final class WebViewViewController: UIViewController & WebViewControllerProtocol {
     
     // MARK: - Private Properties
     private var estimatedProgressObservation: NSKeyValueObservation?
-    
-    // MARK: - Private Constants
-    private let oauth2Service = OAuth2Service.shared
     
     // MARK: - Private Views
     private lazy var webView: WKWebView = {
@@ -23,48 +20,52 @@ final class WebViewViewController: UIViewController {
     
     // MARK: - Internal Properties
     weak var delegate: WebViewViewControllerDelegate?
+    var presenter: WebViewPresenterProtocol?
     
     // MARK: - View Life Cycles
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        presenter?.viewDidLoad()
+        
         estimatedProgressObservation = webView.observe(
             \.estimatedProgress,
              options: [.new]
-        ) { [weak self] _, _ in
-            self?.updateProgress()
+        ) { [weak self] _, progress in
+            guard let progress = progress.newValue else {
+                logErrorToSTDIO(
+                    errorDescription: "No progress value"
+                )
+                return
+            }
+            let floatProgress = Float(progress)
+            self?.presenter?.didUpdateProgressValue(floatProgress)
         }
-
+        
+        webView.navigationDelegate = self
         setUpView()
-        loadAuthView()
+    }
+    
+    deinit {
+        estimatedProgressObservation = nil
     }
 }
 
-// MARK: - Extensions + Private WebViewViewController UI Updates
-private extension WebViewViewController {
-    func loadAuthView() {
-        guard let request = oauth2Service.getUserAuthRequest() else {
-            logErrorToSTDIO(
-                errorDescription: "Failed to create URLRequest by OAouth2Service.getUserAuthRequest"
-            )
-            return
-        }
+// MARK: - Extensions + Internal WebViewViewController UI Updates
+extension WebViewViewController {
+    func load(request: URLRequest) {
         webView.load(request)
     }
     
-    func updateProgress() {
+    func setProgressValue(_ progress: Float) {
         progressView.setProgress(
-            Float(webView.estimatedProgress),
+            progress,
             animated: true
         )
-        
-        if webView.estimatedProgress >= 1.0 {
-            UIView.animate(withDuration: 0.3) { [weak self] in
-                self?.progressView.alpha = 0
-            }
-        } else {
-            progressView.alpha = 1
-        }
+    }
+    
+    func setProgressHidden(_ hidden: Bool) {
+        progressView.isHidden = hidden
     }
 }
 
@@ -76,7 +77,7 @@ extension WebViewViewController: WKNavigationDelegate {
         decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void
     ) {
         progressView.resetProgress()
-        if let code = code(from: navigationAction) {
+        if let code = presenter?.code(from: navigationAction) {
             decisionHandler(.cancel)
             delegate?.webViewViewController(self, didAuthenticateWithCode: code)
             delegate?.webViewViewControllerDidCancel(self)
@@ -90,21 +91,6 @@ extension WebViewViewController: WKNavigationDelegate {
 private extension WebViewViewController {
     @objc func didTapBackButton() {
         dismiss(animated: true)
-    }
-}
-
-// MARK: - Extensions + Private Helpers
-private extension WebViewViewController {
-    func code(from navigationAction: WKNavigationAction) -> String? {
-        if
-            let url = navigationAction.request.url,
-            let urlComponents = URLComponents(string: url.absoluteString),
-            let queryItems = urlComponents.queryItems,
-            let codeQueryItem = queryItems.first(where: { $0.name == "code" })
-        {
-            return codeQueryItem.value
-        }
-        return nil
     }
 }
 
@@ -156,6 +142,7 @@ private extension WebViewViewController {
     func setUpWebView() {
         webView.navigationDelegate = self
         webView.translatesAutoresizingMaskIntoConstraints = false
+        webView.accessibilityIdentifier = AccessibilityElement.unsplashWebView.rawValue
         
         view.addSubview(webView)
         
