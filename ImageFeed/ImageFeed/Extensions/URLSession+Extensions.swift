@@ -19,7 +19,9 @@ extension URLSession {
 
         let task = dataTask(with: urlRequest) { data, response, error in
             if let error {
-                fulfillCompletionOnMainThread(.failure(NetworkError.urlRequestError(error)))
+                fulfillCompletionOnMainThread(
+                    .failure(NetworkError.urlRequestError(error))
+                )
                 return
             }
             
@@ -27,21 +29,29 @@ extension URLSession {
                 let data,
                 let response = response as? HTTPURLResponse
             else {
-                fulfillCompletionOnMainThread(.failure(NetworkError.urlSessionError))
+                fulfillCompletionOnMainThread(
+                    .failure(NetworkError.urlSessionError)
+                )
                 return
             }
                                               
             guard
                 200..<300 ~= response.statusCode
             else {
-                fulfillCompletionOnMainThread(.failure(NetworkError.httpStatusCode(response.statusCode)))
+                fulfillCompletionOnMainThread(
+                    .failure(NetworkError.httpStatusCode(response.statusCode))
+                )
                 return
             }
             
             if let data: T = self.decode(data: data) {
-                fulfillCompletionOnMainThread(.success(data))
+                fulfillCompletionOnMainThread(
+                    .success(data)
+                )
             } else {
-                fulfillCompletionOnMainThread(.failure(ParseError.decodeError(T: T.self)))
+                fulfillCompletionOnMainThread(
+                    .failure(ParseError.decodeError(T: T.self))
+                )
             }
         }
         
@@ -57,7 +67,12 @@ extension URLSession {
     ) throws -> URLSessionTask {
     
         guard
-            let url = parameters.isEmpty ? URL(string: urlString) : createURL(base: urlString, with: parameters)
+            let url = parameters.isEmpty ?
+                URL(string: urlString) :
+                createURL(
+                    base: urlString,
+                    with: parameters
+                )
         else {
             throw NetworkError.invalidURLString
         }
@@ -91,7 +106,13 @@ fileprivate extension URLSession {
         with parameters: [String: String]
     ) -> URL? {
         var urlComponents = URLComponents(string: urlString)
-        urlComponents?.queryItems = parameters.map { return URLQueryItem(name: $0, value: $1) }
+        urlComponents?.queryItems =
+        parameters.map {
+            URLQueryItem(
+                name: $0,
+                value: $1
+            )
+        }
         return urlComponents?.url
     }
 }

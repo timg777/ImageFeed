@@ -1,3 +1,4 @@
 enum UserInfoKey: String {
-    case profileImageURLString = "ProfileImageURLString"
+    case profileImageURLString = "ProfileImageURLStringKey"
+    case userProfile = "UserProfileKey"
 }

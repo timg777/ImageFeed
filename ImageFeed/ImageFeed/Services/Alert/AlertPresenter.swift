@@ -19,13 +19,19 @@ final class AlertPresenter: AlertPresenterProtocol {
             title: "Не надо",
             style: .default
         ) { _ in
-            alert.dismiss(animated: true, completion: primaryAction)
+            alert.dismiss(
+                animated: true,
+                completion: primaryAction
+            )
         }
         let retryAction = UIAlertAction(
             title: "Повторить",
             style: .default
         ) { _ in
-            alert.dismiss(animated: true, completion: retryAction)
+            alert.dismiss(
+                animated: true,
+                completion: retryAction
+            )
         }
         
         primaryAction.accessibilityIdentifier = AccessibilityElement.alertOKButton.rawValue
@@ -52,7 +58,10 @@ final class AlertPresenter: AlertPresenterProtocol {
             title: "Ок",
             style: .default
         ) { _ in
-            alert.dismiss(animated: true, completion: action)
+            alert.dismiss(
+                animated: true,
+                completion: action
+            )
         }
         
         action.accessibilityIdentifier = AccessibilityElement.alertOKButton.rawValue

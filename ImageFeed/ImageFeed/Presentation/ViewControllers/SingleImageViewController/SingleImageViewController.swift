@@ -116,6 +116,7 @@ private extension SingleImageViewController {
             with: imageURL,
             placeholder: UIImage(resource: .markStub)
         ) { [weak self] result in
+            UIBlockingActivityIndicator.dismissActivityIndicator()
             guard let self else { return }
             switch result {
             case .success:
@@ -126,7 +127,6 @@ private extension SingleImageViewController {
                 )
                 showError()
             }
-            UIBlockingActivityIndicator.dismissActivityIndicator()
         }
     }
     
@@ -200,8 +200,11 @@ private extension SingleImageViewController {
 private extension SingleImageViewController {
     func setUpViews() {
         setUpScrollView()
+        
         setUpImage()
+        
         setUpBackButton()
+        
         setUpShareButton()
     }
     
@@ -210,6 +213,7 @@ private extension SingleImageViewController {
         imageView.frame.size = imageSize
         imageView.contentMode = .center
         imageView.isUserInteractionEnabled = false
+        imageView.accessibilityIdentifier = AccessibilityElement.singleImage.rawValue
         imageView.translatesAutoresizingMaskIntoConstraints = false
         
         scrollView.addSubview(imageView)
@@ -283,12 +287,14 @@ private extension SingleImageViewController {
             for: .normal
         )
         backButton.imageView?.tintColor = .ypWhite
+        backButton.accessibilityIdentifier = AccessibilityElement.singleImageBackButton.rawValue
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        
         backButton.addTarget(
             self,
             action: #selector(didTapBackButton),
             for: .touchUpInside
         )
-        backButton.translatesAutoresizingMaskIntoConstraints = false
         
         view.addSubview(backButton)
         

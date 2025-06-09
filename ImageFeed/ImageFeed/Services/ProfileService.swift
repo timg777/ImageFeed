@@ -2,18 +2,22 @@ import UIKit
 
 final class ProfileService: ProfileServiceProtocol {
     
-    static let shared = ProfileService()
-    private init() {}
-    
     enum RequestKind {
         case basicRequest
         case publicRequest
     }
     
+    // MARK: - Singletone initialization
+    static let shared = ProfileService()
+    private init() {}
+    
+    // MARK: - Private Properties
     private(set) var task: URLSessionTask?
-    
     private(set) var profile: Profile?
-    
+}
+
+// MARK: - Extensions + Internal ProfileService -> ProfileServiceProtocol Conformance
+extension ProfileService {
     func fetchProfile(
         httpMethod: URLSession.HTTPMethod,
         token: String,
@@ -21,11 +25,17 @@ final class ProfileService: ProfileServiceProtocol {
     ) {
         
         if let _ = task {
-            handler(.failure(NetworkError.repeatedRequest))
+            handler(
+                .failure(NetworkError.repeatedRequest)
+            )
             return
         }
 
-        let urlString = Constants.Service.profile.urlString
+        let urlString =
+        Constants
+            .Service
+            .profile
+            .urlString
         let headers: [String:String] = ["Authorization": "Bearer \(token)"]
         
         do {
@@ -37,19 +47,35 @@ final class ProfileService: ProfileServiceProtocol {
                 
                 switch result {
                 case .success(let value):
+                    let username = value.username ?? "No data"
+                    let name = "\(value.first_name ?? "No data") \(value.last_name ?? "No data")"
+                    let loginName = "@\(value.username ?? "No data")"
+                    let bio = value.bio ?? "No Data"
+                    
                     let profile = Profile(
-                        username: value.username ?? "No data",
-                        name: "\(value.first_name ?? "No data") \(value.last_name ?? "No data")",
-                        loginName: "@\(value.username ?? "No data")",
-                        bio: value.bio ?? "No Data"
+                        username: username,
+                        name: name,
+                        loginName: loginName,
+                        bio: bio
                     )
                     self.profile = profile
-                    handler(.success(profile))
+                    handler(
+                        .success(profile)
+                    )
+                    
+                    NotificationCenter.default
+                        .post(
+                            name: .profileServiceProviderDidChangeNotification,
+                            object: self,
+                            userInfo: [UserInfoKey.userProfile.rawValue: profile]
+                        )
                     
                     task?.cancel()
                     task = nil
                 case .failure(let error):
-                    handler(.failure(error))
+                    handler(
+                        .failure(error)
+                    )
                     task?.cancel()
                     task = nil
                 }
@@ -57,7 +83,9 @@ final class ProfileService: ProfileServiceProtocol {
             
             task?.resume()
         } catch {
-            handler(.failure(error))
+            handler(
+                .failure(error)
+            )
             task?.cancel()
             task = nil
         }

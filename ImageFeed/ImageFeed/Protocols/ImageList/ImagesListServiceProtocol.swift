@@ -6,7 +6,9 @@ protocol ImagesListServiceProtocol {
     var photos: [Photo] { get }
     var lastLoadedPage: Int? { get }
     
-    func fetchPhotosNextPage(completion: @escaping (Result<Void, Error>) -> Void)
+    func fetchPhotosNextPage(
+        completion: @escaping (Result<Void, Error>) -> Void
+    )
     func changeLike(
         token: String,
         photoIndex: Int,

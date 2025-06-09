@@ -5,7 +5,7 @@ enum Constants {
     static let secretKey = "JPMP6CcEMsby3-sDq4D_aqnWUNK7F4XOIZe_386QUmo"
     static let redirectURI = "urn:ietf:wg:oauth:2.0:oob"
     static let accessScope = "public+read_user+write_user+read_photos+write_photos+write_likes+write_followers+read_collections+write_collections"
-    static let defaultBaseURL = URL(string: "https://unsplash.com/")
+    static let defaultBaseURLString = "https://unsplash.com/"
     static let apiDefaultBaseURLString = "https://api.unsplash.com/"
     
     static let photoLikeReplacementString = "ID"
@@ -15,9 +15,12 @@ enum Constants {
         case profile
         case photos
         case like
+        case auth
         
         var urlString: String {
             switch self {
+            case .auth:
+                defaultBaseURLString + "oauth/authorize"
             case .profileImage:
                 apiDefaultBaseURLString + "users/"
             case .profile:

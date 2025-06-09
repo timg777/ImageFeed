@@ -1,13 +1,21 @@
 import UIKit
 
 final class OAuth2Service: OAuth2ServiceProtocol {
+    
+    // MARK: - Singletone initialization
     static let shared = OAuth2Service()
+    private init() {}
+    
+    // MARK: - Private Constants
+    private let configuration: AuthConfiguration = .standard
+    
+    // MARK: - Private Properties
     private var lastCode: String?
     private var task: URLSessionTask?
-    private init() {}
+
 }
 
-// MARK: - Extensions + Internal Data Fetching
+// MARK: - Extensions + Internal OAuth2Service -> OAuth2ServiceProtocol Conformance
 extension OAuth2Service {
     func fetchOAuthToken(
         code: String,
@@ -16,7 +24,9 @@ extension OAuth2Service {
         guard
             lastCode != code
         else {
-            handler(.failure(OAuth2Error.duplicateOAuthRequest))
+            handler(
+                .failure(OAuth2Error.duplicateOAuthRequest)
+            )
             return
         }
         
@@ -26,7 +36,9 @@ extension OAuth2Service {
         guard
             let request = makeOAuthTokenRequest(code: code)
         else {
-            handler(.failure(OAuth2Error.invalidRequest))
+            handler(
+                .failure(OAuth2Error.invalidRequest)
+            )
             return
         }
         
@@ -37,12 +49,18 @@ extension OAuth2Service {
                 let tokenType = oAuthTokenResponse.token_type
                 
                 if tokenType.lowercased() == "bearer" {
-                    handler(.success(oAuthTokenResponse.access_token))
+                    handler(
+                        .success(oAuthTokenResponse.access_token)
+                    )
                 } else {
-                    handler(.failure(OAuth2Error.invalidTokenType(tokenType)))
+                    handler(
+                        .failure(OAuth2Error.invalidTokenType(tokenType))
+                    )
                 }
             case .failure(let error):
-                handler(.failure(error))
+                handler(
+                    .failure(error)
+                )
             }
             self.task = nil
             self.lastCode = nil
@@ -57,14 +75,26 @@ extension OAuth2Service {
 extension OAuth2Service {
     func getUserAuthRequest() -> URLRequest? {
         guard
-            var urlComponents = URLComponents(string: WebViewConstants.unsplashAuthporizeURLString)
+            var urlComponents = URLComponents(string: configuration.authURLString)
         else { return nil }
         
         urlComponents.queryItems = [
-            URLQueryItem(name: "client_id", value: Constants.accessKey),
-            URLQueryItem(name: "redirect_uri", value: Constants.redirectURI),
-            URLQueryItem(name: "response_type", value: "code"),
-            URLQueryItem(name: "scope", value: Constants.accessScope)
+            URLQueryItem(
+                name: "client_id",
+                value: configuration.accessKey
+            ),
+            URLQueryItem(
+                name: "redirect_uri",
+                value: configuration.redirectURI
+            ),
+            URLQueryItem(
+                name: "response_type",
+                value: "code"
+            ),
+            URLQueryItem(
+                name: "scope",
+                value: configuration.accessScope
+            )
         ]
         
         guard
@@ -79,12 +109,12 @@ extension OAuth2Service {
 // MARK: - Extensions + Private Helpers
 private extension OAuth2Service {
     func makeOAuthTokenRequest(code: String) -> URLRequest? {
-        guard let baseURL = Constants.defaultBaseURL else { return nil }
+        guard let baseURL = configuration.defaultBaseURL else { return nil }
         guard let url = URL(
             string: "oauth/token/"
-            + "?client_id=\(Constants.accessKey)"
-            + "&&client_secret=\(Constants.secretKey)"
-            + "&&redirect_uri=\(Constants.redirectURI)"
+            + "?client_id=\(configuration.accessKey)"
+            + "&&client_secret=\(configuration.secretKey)"
+            + "&&redirect_uri=\(configuration.redirectURI)"
             + "&&code=\(code)"
             + "&&grant_type=authorization_code",
             relativeTo: baseURL
